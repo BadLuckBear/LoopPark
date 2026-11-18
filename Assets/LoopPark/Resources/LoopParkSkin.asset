@@ -1,0 +1,208 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 463be38ff5cf8d8418bd4c48677399e8, type: 3}
+  m_Name: LoopParkSkin
+  m_EditorClassIdentifier: 
+  carSpritesByColor: []
+  carBody: {fileID: 0}
+  carDetail: {fileID: 0}
+  carUnder: {fileID: 0}
+  hiddenIcon: {fileID: 0}
+  carDirectionalSprites: []
+  carDirectionalDetails: []
+  carPrefab: {fileID: 3597396984039126186, guid: e6ba8be7312ad5e4994387c17c973b6e, type: 3}
+  carColors:
+  - {r: 0.96862745, g: 0.14509805, b: 0.16078432, a: 1}
+  - {r: 0.94509804, g: 0.8235294, b: 0.11372549, a: 1}
+  - {r: 0.1254902, g: 0.22745098, b: 0.9411765, a: 1}
+  - {r: 0.078431375, g: 0.8, b: 0.08627451, a: 1}
+  - {r: 0.5254902, g: 0.15294118, b: 0.96862745, a: 1}
+  - {r: 1, g: 0.45882353, b: 0.0627451, a: 1}
+  - {r: 0.98039216, g: 0.47058824, b: 0.7058824, a: 1}
+  - {r: 0.3254902, g: 0.78431374, b: 0.7921569, a: 1}
+  - {r: 0.84313726, g: 0.8627451, b: 0.9019608, a: 1}
+  - {r: 0.0627451, g: 0.07058824, b: 0.09019608, a: 1}
+  - {r: 0.59607846, g: 0.2784314, b: 0.13333334, a: 1}
+  - {r: 0.9372549, g: 0.34509805, b: 0.89411765, a: 1}
+  - {r: 0.09411765, g: 0.52156866, b: 0.1764706, a: 1}
+  - {r: 0.92156863, g: 0.81960785, b: 0.54509807, a: 1}
+  - {r: 0, g: 0.5568628, b: 1, a: 1}
+  hiddenCarColor: {r: 0.45, g: 0.34, b: 0.8, a: 1}
+  carViewTilt: 45
+  carModelScale: {x: 1.55, y: 1.3}
+  carSmoothness: 0.38
+  carSpecular: 0
+  carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+  carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+  carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+  carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+  carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+  carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  carAppearanceByColor:
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  - carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  hiddenCarAppearance:
+    carSmoothness: 0.38
+    carSpecular: 0
+    carWindowColor: {r: 0.30464578, g: 0.3448519, b: 0.3962264, a: 1}
+    carTrimColor: {r: 0.23616055, g: 0.25041744, b: 0.2735849, a: 0}
+    carHeadlightColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    carTaillightColor: {r: 0.75, g: 0.04, b: 0.05, a: 1}
+    carWheelColor: {r: 0.25, g: 0.28, b: 0.33, a: 1}
+    carTireColor: {r: 0.055, g: 0.065, b: 0.08, a: 1}
+  carAppearanceVersion: 1
+  brakeStrength: 300
+  idleShake: 1.2
+  exhaustSprite: {fileID: 0}
+  exhaustColor: {r: 1, g: 1, b: 1, a: 0.9}
+  exhaustOffset: {x: 0.24, y: -0.5}
+  exhaustRate: 5
+  background: {r: 0.47, g: 0.49, b: 0.72, a: 1}
+  trackColor: {r: 0.36, g: 0.37, b: 0.52, a: 1}
+  trackEdge: {r: 0.86, g: 0.87, b: 0.96, a: 1}
+  lotColor: {r: 0.3, g: 0.31, b: 0.45, a: 1}
+  columnColor: {r: 0.4, g: 0.41, b: 0.57, a: 1}
+  grassColor: {r: 0.55, g: 0.8, b: 0.25, a: 1}
+  backgroundSprite: {fileID: 0}
+  uiFont: {fileID: 0}
+  buttonSprite: {fileID: 0}
+  panelSprite: {fileID: 0}
+  primaryButton: {r: 0.3, g: 0.78, b: 0.3, a: 1}
+  secondaryButton: {r: 0.22, g: 0.52, b: 0.95, a: 1}
+  dangerButton: {r: 0.92, g: 0.33, b: 0.3, a: 1}
+  panelColor: {r: 1, g: 0.97, b: 0.9, a: 1}
+  sfxTap: {fileID: 0}
+  sfxPark: {fileID: 0}
+  sfxPush: {fileID: 0}
+  sfxClear: {fileID: 0}
+  sfxWin: {fileID: 0}
+  sfxFail: {fileID: 0}
+  sfxButton: {fileID: 0}
+  music: {fileID: 0}

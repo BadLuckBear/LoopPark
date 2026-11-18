@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 596ff59b959c97548b658b100bcf7c4d, type: 3}
+  m_Name: SYSDKConfig
+  m_EditorClassIdentifier: 
+  sy_applovin_ads_sdk_key: N8Mz8NTRJzUwtKxuBadDfeTa_vE4PD3Zht4GSSc9Oe0b1Xp2hvUA4oRvG7ZyaQGm5SGFv4nTT5BZdvfbyNyCUb
+  sy_support_email: 
+  sy_app_scheme: 
+  sy_deeplink_hosts: 
+  gms_ads_application_id: ca-app-pub-6538815490569106~5458574643
+  sy_gms_ads_open_ad_id: 
+  sy_gms_ads_test_device_id: 
+  sy_gms_gdpr_test_device_id: 
+  sy_gms_gdpr_ump_failed_load_ads: yes
+  sy_applovin_ads_open_ad_id: 
+  sy_applovin_ads_test_google_ad_ids: 
+  sy_applovin_wait_admob: 
+  sy_applovin_max_ad_review_key: 
+  sy_applovin_ads_banner_anchored: 
+  sy_applovin_ads_banner_inline: 
+  sy_ad_route_enable: 
+  sy_ad_route_wait_ms: 
+  sy_ad_route_google_networks: 
+  sy_ad_route_unit_map: 
+  sy_firebase_report_ad_revenue: yes
+  sy_adjust_app_token: 1tlonb7nckdc
+  sy_adjust_revenue_report_unlock: 
+  sy_adjust_purchase_token: 
+  sy_adjust_report_ad_revenue: 
+  sy_game_services_project_id: 
+  sy_gid_web_client_id: 
+  sy_gid_enable: 
+  googleServicesJsonPath: Assets/SYSDK/Editor/Android/Config/google-services.json
+  sy_deeplink_hosts_ios: 
+  development_team_id_ios: 
+  gms_ads_application_id_ios: 
+  sy_gms_ads_open_ad_id_ios: 
+  sy_gms_test_device_id_ios: 
+  sy_gms_gdpr_test_id_ios: 
+  sy_gms_ump_failed_load_ads_ios: yes
+  sy_applovin_ads_open_ad_id_ios: 
+  sy_applovin_test_idfa_ios: 
+  sy_applovin_wait_admob_ios: 
+  sy_firebase_report_ad_revenue_ios: yes
+  sy_adjust_app_token_ios: 
+  sy_adjust_purchase_token_ios: 
+  sy_adjust_report_ad_revenue_ios: 
+  sy_game_center_enable_ios: 
+  sy_sign_in_with_apple_enable_ios: 
+  sy_payment_sk2_enable_ios: 
+  googleServiceInfoPlistPath: 

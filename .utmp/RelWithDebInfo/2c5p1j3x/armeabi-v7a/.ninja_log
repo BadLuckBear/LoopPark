@@ -1,0 +1,23 @@
+# ninja log v5
+1227	1667	8166227956281439	D:/Game/ParkingLoop/LoopPark/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/2c5p1j3x/obj/armeabi-v7a/libswappywrapper.so	26e82cf9535cf734
+204	3989	8166227979423412	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	3bdc23221be18f40
+779	1222	8166227951794758	FramePacing/CMakeFiles/swappywrapper.dir/UnitySwappyWrapper.cpp.o	a333f43bb083aa41
+685	3899	8166227978515412	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	48fa7067cdbba865
+1	3023	8166227969741701	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	6483754df9fa2676
+298	3185	8166227971428263	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	7d64bb2eafa27efb
+588	3561	8166227975181291	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	8646549a00f27067
+104	3241	8166227971937324	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	2ae9b3d6012e088
+480	3374	8166227973315008	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	5fd21a6cfaf7da1e
+387	3951	8166227979059411	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	a2474b65072b3824
+3989	4332	8166227982827434	D:/Game/ParkingLoop/LoopPark/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/2c5p1j3x/obj/armeabi-v7a/libgame.so	1ac7a1edc4cf9bf9
+612	922	8166332590552419	FramePacing/CMakeFiles/swappywrapper.dir/UnitySwappyWrapper.cpp.o	5c1ea53d14a2b644
+923	1185	8166332593182560	D:/Game/ParkingLoop/LoopPark/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/2c5p1j3x/obj/armeabi-v7a/libswappywrapper.so	146eb2abb8b8cdff
+14	1997	8166332601258668	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	ade2f4e937c535c1
+325	2264	8166332603935579	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	95098f4ef48a276e
+245	2271	8166332604022604	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	a348eed7f5fc0698
+167	2315	8166332604410163	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	1be0b0beb75cf6ee
+469	2419	8166332605371738	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	183bfe4bb95145fb
+538	2666	8166332607930037	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	e2e7dc8ca6c69d4d
+90	2706	8166332608320307	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	a9d2fee916a4ab26
+398	2729	8166332608573512	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	db353dfc09978f47
+2729	3009	8166332611363174	D:/Game/ParkingLoop/LoopPark/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/2c5p1j3x/obj/armeabi-v7a/libgame.so	6ed7322493b0f169

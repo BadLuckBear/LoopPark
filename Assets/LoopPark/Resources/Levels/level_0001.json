@@ -1,0 +1,161 @@
+{
+    "id": 1,
+    "difficulty": 0,
+    "capacity": 4,
+    "loopLimit": 5,
+    "columns": [
+        {
+            "fence": false,
+            "cv": 0,
+            "cc": 0,
+            "colored": false,
+            "lcol": 0,
+            "garage": false,
+            "gcol": 0,
+            "ice": 0,
+            "levels": [],
+            "cars": [
+                {
+                    "c": 6,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 5,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 8,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 5,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                }
+            ]
+        },
+        {
+            "fence": false,
+            "cv": 0,
+            "cc": 0,
+            "colored": false,
+            "lcol": 0,
+            "garage": false,
+            "gcol": 0,
+            "ice": 0,
+            "levels": [],
+            "cars": [
+                {
+                    "c": 6,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 8,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 7,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 6,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                }
+            ]
+        }
+    ],
+    "lanes": [
+        {
+            "cars": [
+                {
+                    "c": 5,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 8,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 7,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 5,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 6,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 8,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 7,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 7,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                }
+            ],
+            "gi": 0,
+            "gn": 0
+        },
+        {
+            "cars": [],
+            "gi": 0,
+            "gn": 0
+        }
+    ],
+    "winRate": 1.0,
+    "seed": 112648
+}

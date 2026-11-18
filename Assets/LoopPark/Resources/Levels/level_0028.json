@@ -1,0 +1,375 @@
+{
+    "id": 28,
+    "difficulty": 0,
+    "capacity": 5,
+    "loopLimit": 5,
+    "columns": [
+        {
+            "fence": false,
+            "cv": 0,
+            "cc": 0,
+            "colored": false,
+            "lcol": 0,
+            "garage": false,
+            "gcol": 0,
+            "ice": 0,
+            "levels": [],
+            "cars": [
+                {
+                    "c": 10,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 9,
+                    "h": true,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 6,
+                    "h": true,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 6,
+                    "h": true,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 7,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                }
+            ]
+        },
+        {
+            "fence": false,
+            "cv": 0,
+            "cc": 0,
+            "colored": false,
+            "lcol": 0,
+            "garage": false,
+            "gcol": 0,
+            "ice": 0,
+            "levels": [],
+            "cars": [
+                {
+                    "c": 10,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 1,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 8,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 7,
+                    "h": true,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 10,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                }
+            ]
+        },
+        {
+            "fence": false,
+            "cv": 0,
+            "cc": 0,
+            "colored": false,
+            "lcol": 0,
+            "garage": false,
+            "gcol": 0,
+            "ice": 0,
+            "levels": [],
+            "cars": [
+                {
+                    "c": 5,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 1,
+                    "h": true,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 6,
+                    "h": true,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 9,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 9,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                }
+            ]
+        },
+        {
+            "fence": false,
+            "cv": 0,
+            "cc": 0,
+            "colored": false,
+            "lcol": 0,
+            "garage": false,
+            "gcol": 0,
+            "ice": 0,
+            "levels": [],
+            "cars": [
+                {
+                    "c": 7,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 8,
+                    "h": true,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 7,
+                    "h": true,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 1,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 5,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                }
+            ]
+        },
+        {
+            "fence": false,
+            "cv": 0,
+            "cc": 0,
+            "colored": false,
+            "lcol": 0,
+            "garage": false,
+            "gcol": 0,
+            "ice": 0,
+            "levels": [],
+            "cars": [
+                {
+                    "c": 7,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 5,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 2,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 5,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 2,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                }
+            ]
+        }
+    ],
+    "lanes": [
+        {
+            "cars": [
+                {
+                    "c": 9,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 6,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 5,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                }
+            ],
+            "gi": 0,
+            "gn": 0
+        },
+        {
+            "cars": [
+                {
+                    "c": 2,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 1,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 10,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 10,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 2,
+                    "h": true,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 6,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 8,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 8,
+                    "h": true,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                }
+            ],
+            "gi": 0,
+            "gn": 0
+        },
+        {
+            "cars": [
+                {
+                    "c": 9,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 2,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 1,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                },
+                {
+                    "c": 8,
+                    "h": false,
+                    "l": 0,
+                    "k": false,
+                    "lk": false
+                }
+            ],
+            "gi": 0,
+            "gn": 0
+        }
+    ],
+    "winRate": 0.5166666507720947,
+    "seed": 431190
+}

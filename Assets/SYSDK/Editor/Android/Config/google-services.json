@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "769962593700",
+    "project_id": "car-loop-parking-game",
+    "storage_bucket": "car-loop-parking-game.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:769962593700:android:09a8a3b2905dbf8f170531",
+        "android_client_info": {
+          "package_name": "com.yocean.carloop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDMPtfVIdmoxmAV_rjIEtQbsAyqZoOJozo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
