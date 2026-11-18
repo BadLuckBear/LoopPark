@@ -579,7 +579,7 @@ namespace LoopPark
             for (int k = 0; k < lanes[l].Count; k++)
             {
                 var y = LanePos(l, VisualIndex(l, k)).y;
-                lanes[l][k].gameObject.SetActive(y > laneMinY && !InGarage(l, k));
+                lanes[l][k].gameObject.SetActive(y > laneMinY - laneStep && !InGarage(l, k));
             }
         }
 
@@ -725,7 +725,6 @@ namespace LoopPark
                 {
                     var ec = lanes[l][emerged];
                     ec.transform.localPosition = LanePos(l, genVisible[l]);
-                    ec.gameObject.SetActive(true);
                     ec.Punch(0.5f);
                 }
                 UpdateGenerator(l);
@@ -734,11 +733,11 @@ namespace LoopPark
             {
                 var lc = lanes[l][k];
                 if (InGarage(l, k)) continue;
-                lc.gameObject.SetActive(true);
+                lc.gameObject.SetActive(LanePos(l, VisualIndex(l, k)).y > laneMinY - laneStep);
                 lc.MoveAlong(new[] { LanePos(l, VisualIndex(l, k)) }, moveSpeed * 0.6f, null, false);
             }
             if (lanes[l].Count > 0) lanes[l][0].Reveal();
-            UpdateLaneVisibilityLater(l);
+            UpdateLaneVisibility(l);
             TryUnlock();
 
             car.Reveal();
@@ -756,14 +755,6 @@ namespace LoopPark
             }, true, false);   // 汇入点通常马上并入环路，不做刹车
             car.BeginTireTrail(fxRoot);
             return car;
-        }
-
-        void UpdateLaneVisibilityLater(int l) => StartCoroutine(LaneVisRoutine(l));
-
-        IEnumerator LaneVisRoutine(int l)
-        {
-            yield return new WaitForSeconds(0.25f);
-            if (lanes != null && l < lanes.Length) UpdateLaneVisibility(l);
         }
 
         void Enter(CarView car, int j)

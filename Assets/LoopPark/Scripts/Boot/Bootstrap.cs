@@ -40,11 +40,12 @@ namespace LoopPark
             // 3D 车模型用的灯光（对 2D 精灵无影响）
             var light = new GameObject("Key Light").AddComponent<Light>();
             light.type = LightType.Directional;
-            light.intensity = 1.05f;
+            light.intensity = SkinConfig.Instance.carKeyLightIntensity;
             light.shadows = LightShadows.None;
-            light.transform.rotation = Quaternion.LookRotation(new Vector3(0.35f, -0.5f, 1f));
+            var direction = SkinConfig.Instance.carKeyLightDirection;
+            light.transform.rotation = Quaternion.LookRotation(direction.sqrMagnitude > 0.001f ? direction : Vector3.forward);
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.62f, 0.62f, 0.68f);
+            RenderSettings.ambientLight = SkinConfig.Instance.carAmbientLight;
 
             Sfx.Init(gameObject);
             SdkIntegration.Initialize();

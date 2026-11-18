@@ -13,6 +13,50 @@ namespace LoopPark.EditorTools
             if (!condition) throw new InvalidOperationException(message);
         }
 
+        [MenuItem("LoopPark/验证独立车辆材质（无需运行）")]
+        public static void CheckMaterialBindings()
+        {
+            var config = AssetDatabase.LoadAssetAtPath<SkinConfig>("Assets/LoopPark/Resources/LoopParkSkin.asset");
+            Require(config != null && config.carPrefab != null, "缺少车辆配置或预制体");
+            var instance = UnityEngine.Object.Instantiate(config.carPrefab);
+            instance.hideFlags = HideFlags.HideAndDontSave;
+            var skin = instance.GetComponent<CarSkin3D>();
+            Require(skin != null, "预制体缺少 CarSkin3D");
+            Material temporary = null;
+            var selected = config.GetCarAppearance(0);
+            var original = selected.windowMaterial;
+            try
+            {
+                // 先走旧覆盖，再切材质，检查旧属性块不会压住新材质。
+                selected.windowMaterial = null;
+                skin.SetCarColor(Palette.Get(0), false, 0);
+                temporary = new Material(Shader.Find(CarMaterialColors.ShaderName));
+                temporary.color = Color.cyan;
+                temporary.SetFloat("_Glossiness", 0.91f);
+                temporary.SetColor("_EmissionColor", Color.red);
+                selected.windowMaterial = temporary;
+                skin.SetCarColor(Palette.Get(0), false, 0);
+                CheckMaterials(skin, Palette.Get(0), selected);
+                Require(temporary.color == Color.cyan && Mathf.Approximately(temporary.GetFloat("_Glossiness"), 0.91f)
+                    && temporary.GetColor("_EmissionColor") == Color.red, "运行时修改了美术材质");
+                selected.windowMaterial = original;
+                for (int i = 0; i < Palette.Count; i++)
+                {
+                    skin.SetCarColor(Palette.Get(i), false, i);
+                    CheckMaterials(skin, Palette.Get(i), config.GetCarAppearance(i));
+                }
+                skin.SetCarColor(config.hiddenCarColor, true, 0);
+                CheckMaterials(skin, config.hiddenCarColor, config.GetCarAppearance(-1));
+                Debug.Log("[CarMaterials] PASS: 15 色与问号车材质绑定、旧覆盖清理、独立高光及发光、深度属性保留");
+            }
+            finally
+            {
+                selected.windowMaterial = original;
+                UnityEngine.Object.DestroyImmediate(instance);
+                if (temporary != null) UnityEngine.Object.DestroyImmediate(temporary);
+            }
+        }
+
         /// <summary>验证渲染深度而非限制 XY 轮廓，允许参考图中紧贴车辆互相遮挡。</summary>
         [MenuItem("LoopPark/验证车辆遮挡层级")]
         public static void CheckDepth()
@@ -84,7 +128,10 @@ namespace LoopPark.EditorTools
                 selected.carSpecular = 0.23f;
                 selected.carWindowColor = Color.cyan;
                 selected.carTrimColor = Color.green;
+                selected.carWindowFrameColor = Color.black;
+                selected.carFrontSplitterColor = Color.gray;
                 selected.carHeadlightColor = Color.yellow;
+                selected.carLightStripColor = Color.cyan;
                 selected.carTaillightColor = Color.blue;
                 selected.carWheelColor = Color.red;
                 selected.carTireColor = Color.white;
@@ -115,27 +162,41 @@ namespace LoopPark.EditorTools
         static void CheckMaterials(CarSkin3D skin, Color paint, CarColorAppearance config)
         {
             var block = new MaterialPropertyBlock();
-            foreach (var renderer in skin.GetComponentsInChildren<MeshRenderer>())
+            var sources = skin.appearance.carPrefab.GetComponentsInChildren<MeshRenderer>(true);
+            var renderers = skin.GetComponentsInChildren<MeshRenderer>(true);
+            Require(sources.Length == renderers.Length, "车辆网格数量与预制体不一致");
+            for (int r = 0; r < renderers.Length; r++)
             {
+                var renderer = renderers[r];
                 var materials = renderer.sharedMaterials;
+                var original = sources[r].sharedMaterials;
                 for (int i = 0; i < materials.Length; i++)
                 {
                     var material = materials[i];
                     Require(material.shader.name == "LoopPark/Layered Car" && !ShaderUtil.ShaderHasError(material.shader), "车辆材质 Shader 错误");
                     renderer.GetPropertyBlock(block, i);
+                    var replacement = CarMaterialColors.ResolveMaterial(original[i].name, config);
+                    if (replacement != null)
+                    {
+                        Require(material == replacement, "部件没有绑定指定材质: " + original[i].name);
+                        Require(!block.HasColor("_Color") && !block.HasFloat("_Glossiness") && !block.HasColor("_SpecColor") && !block.HasColor("_EmissionColor"), "材质仍被运行时代码覆盖");
+                        Require(block.HasFloat("_CarDepth"), "换材质后丢失车辆深度");
+                        continue;
+                    }
                     // 车辆使用不透明材质，颜色选择器的 Alpha 不参与车身透明度。
-                    var expectedColor = CarMaterialColors.Resolve(material.name, paint, config);
+                    var expectedColor = CarMaterialColors.Resolve(original[i].name, paint, config);
                     expectedColor.a = 1;
                     Require(block.GetColor("_Color") == expectedColor, "材质颜色未刷新: " + material.name);
                     Require(block.GetColor("_EmissionColor") == Color.black, "自发光未清除: " + material.name);
                     Require(Mathf.Approximately(block.GetFloat("_Glossiness"), config.carSmoothness), "光泽未刷新: " + material.name);
                     Require(block.GetColor("_SpecColor") == Color.white * config.carSpecular, "高光未刷新: " + material.name);
-                    Require(material.mainTexture == null, "仍有旧贴图: " + material.name);
                 }
             }
-            Require(CarMaterialColors.Resolve("car_biantiao", paint, config) == config.carTrimColor, "窗框/饰条残留橙色");
-            Require(CarMaterialColors.Resolve("car_cequn", paint, config) == config.carTrimColor, "前铲残留橙色");
+            Require(CarMaterialColors.Resolve("car_black", paint, config) == config.carWindowFrameColor, "窗框颜色未独立");
+            Require(CarMaterialColors.Resolve("car_biantiao", paint, config) == config.carTrimColor, "饰条颜色未独立");
+            Require(CarMaterialColors.Resolve("car_cequn", paint, config) == config.carFrontSplitterColor, "前铲颜色未独立");
             Require(CarMaterialColors.Resolve("car_chedeng", paint, config) == config.carHeadlightColor, "车灯残留橙色");
+            Require(CarMaterialColors.Resolve("car_dengtiao", paint, config) == config.carLightStripColor, "灯条颜色未独立");
         }
 
         [MenuItem("LoopPark/截取当前游戏画面")]

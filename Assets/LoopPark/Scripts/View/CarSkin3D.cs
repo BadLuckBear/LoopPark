@@ -22,6 +22,7 @@ namespace LoopPark
         static readonly int SmoothnessId = Shader.PropertyToID("_Glossiness");
         static readonly int SpecularId = Shader.PropertyToID("_SpecColor");
         static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
+        static readonly int DepthId = Shader.PropertyToID("_CarDepth");
         // 多网格模型必须逐个材质槽处理；只染第一个网格会留下 FBX 的橙色。
         Renderer[] renderers;
         Material[][] materials;
@@ -48,12 +49,28 @@ namespace LoopPark
             mpb ??= new MaterialPropertyBlock();
             for (int i = 0; i < renderers.Length; i++)
             {
+                var applied = renderers[i].sharedMaterials;
+                bool changed = false;
                 for (int slot = 0; slot < materials[i].Length; slot++)
                 {
                     if (materials[i][slot] == null) continue;
+                    var replacement = CarMaterialColors.ResolveMaterial(materials[i][slot].name, profile);
+                    // 深度 Shader 是车辆跨网格排序的必要条件，拒绝不兼容材质。
+                    if (replacement != null && replacement.shader.name != CarMaterialColors.ShaderName)
+                        replacement = null;
+                    var target = replacement != null ? replacement : materials[i][slot];
+                    if (applied[slot] != target) { applied[slot] = target; changed = true; }
+                    renderers[i].GetPropertyBlock(mpb, slot);
+                    float depth = mpb.HasFloat(DepthId) ? mpb.GetFloat(DepthId) : -2f;
+                    mpb.Clear(); // 清掉旧色号覆盖，让材质自身参数立即生效。
+                    mpb.SetFloat(DepthId, depth);
+                    if (replacement != null)
+                    {
+                        renderers[i].SetPropertyBlock(mpb, slot);
+                        continue;
+                    }
                     var c = CarMaterialColors.Resolve(materials[i][slot].name, color, profile);
                     c.a = 1;
-                    renderers[i].GetPropertyBlock(mpb, slot); // 保留整车遮挡深度。
                     mpb.SetColor(ColorId, c);
                     mpb.SetColor(BaseColorId, c);
                     mpb.SetFloat(SmoothnessId, profile.carSmoothness);
@@ -61,6 +78,7 @@ namespace LoopPark
                     mpb.SetColor(EmissionId, Color.black);
                     renderers[i].SetPropertyBlock(mpb, slot);
                 }
+                if (changed) renderers[i].sharedMaterials = applied;
             }
         }
 

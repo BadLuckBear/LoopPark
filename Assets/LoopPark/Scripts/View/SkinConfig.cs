@@ -6,16 +6,33 @@ namespace LoopPark
     [System.Serializable]
     public sealed class CarColorAppearance
     {
+        [Header("独立材质（指定后以材质参数为准，旧调色仅作回退）")]
+        public Material paintMaterial;
+        public Material windowMaterial;
+        public Material windowFrameMaterial;
+        public Material trimMaterial;
+        public Material frontSplitterMaterial;
+        public Material headlightMaterial;
+        public Material lightStripMaterial;
+        public Material taillightMaterial;
+        public Material wheelMaterial;
+        public Material tireMaterial;
         [Tooltip("0=粗糙哑光，1=光滑亮面。建议卡通车使用 0.1～0.3；播放时可调整。")]
         [Range(0, 1)] public float carSmoothness = 0.18f;
         [Tooltip("反射高光的强度：0=关闭高光，1=强高光。默认 0.08，降低写实金属感。")]
         [Range(0, 1)] public float carSpecular = 0.08f;
         [Tooltip("车窗的固定颜色，不随车漆变化；建议使用较暗的蓝灰色，避免玻璃泛橙。")]
         public Color carWindowColor = new Color(0.20f, 0.27f, 0.36f);
-        [Tooltip("窗框、侧裙、边条、前铲内部等装饰件的固定颜色。")]
+        [Tooltip("车身饰条的颜色。")]
         public Color carTrimColor = new Color(0.13f, 0.16f, 0.21f);
+        [Tooltip("车窗框与黑色结构件的颜色。")]
+        public Color carWindowFrameColor = new Color(0.13f, 0.16f, 0.21f);
+        [Tooltip("前铲内部与下摆的颜色。")]
+        public Color carFrontSplitterColor = new Color(0.13f, 0.16f, 0.21f);
         [Tooltip("前车灯及旁边灯条的颜色；默认冷白色，不启用自发光。")]
         public Color carHeadlightColor = new Color(0.90f, 0.95f, 1f);
+        [Tooltip("前灯旁灯条的颜色。")]
+        public Color carLightStripColor = new Color(0.90f, 0.95f, 1f);
         [Tooltip("后尾灯的固定颜色，默认暗红色。")]
         public Color carTaillightColor = new Color(0.75f, 0.04f, 0.05f);
         [Tooltip("轮毂的固定颜色，默认中性灰色。")]
@@ -62,6 +79,11 @@ namespace LoopPark
         [Header("3D 车辆外观（播放时修改立即生效）")]
         [Tooltip("相对标准车模型的横向/纵向缩放，默认 X=1.4、Y=1.2；只改变外观，不改变逻辑车位或碰撞间距。")]
         public Vector2 carModelScale = new Vector2(1.4f, 1.2f);
+        [Header("3D 车辆光照（启动关卡时应用，预览使用同一组参数）")]
+        [Min(0)] public float carKeyLightIntensity = 1.1f;
+        [Tooltip("光线照射方向，Z 应大于 0。")]
+        public Vector3 carKeyLightDirection = new Vector3(0.35f, -1.4f, 1f);
+        public Color carAmbientLight = new Color(0.30f, 0.30f, 0.34f);
         [Tooltip("0=粗糙哑光，1=光滑亮面。建议卡通车使用 0.1～0.3；播放时可调整。")]
         [SerializeField, HideInInspector] float carSmoothness = 0.18f;
         [Tooltip("反射高光的强度：0=关闭高光，1=强高光。默认 0.08，降低写实金属感。")]
@@ -83,6 +105,7 @@ namespace LoopPark
         public CarColorAppearance[] carAppearanceByColor;
         [Tooltip("问号车独立使用此材质配置，避免部件颜色暴露隐藏车色。")]
         public CarColorAppearance hiddenCarAppearance;
+        [SerializeField, HideInInspector] public bool carMaterialsInitialized;
 
         [SerializeField, HideInInspector] int carAppearanceVersion;
 
@@ -95,7 +118,10 @@ namespace LoopPark
                 carSpecular = carSpecular,
                 carWindowColor = carWindowColor,
                 carTrimColor = carTrimColor,
+                carWindowFrameColor = carTrimColor,
+                carFrontSplitterColor = carTrimColor,
                 carHeadlightColor = carHeadlightColor,
+                carLightStripColor = carHeadlightColor,
                 carTaillightColor = carTaillightColor,
                 carWheelColor = carWheelColor,
                 carTireColor = carTireColor,
@@ -107,6 +133,14 @@ namespace LoopPark
                 hiddenCarAppearance = defaults.Copy();
                 carAppearanceVersion = 1;
             }
+            if (carAppearanceVersion == 1)
+            {
+                if (carAppearanceByColor != null)
+                    foreach (var profile in carAppearanceByColor)
+                        if (profile != null) MigrateCarParts(profile);
+                if (hiddenCarAppearance != null) MigrateCarParts(hiddenCarAppearance);
+                carAppearanceVersion = 2;
+            }
             if (carAppearanceByColor == null || carAppearanceByColor.Length < Palette.Count)
                 System.Array.Resize(ref carAppearanceByColor, Palette.Count);
             for (int i = 0; i < carAppearanceByColor.Length; i++)
@@ -114,10 +148,17 @@ namespace LoopPark
             if (hiddenCarAppearance == null) hiddenCarAppearance = defaults.Copy();
         }
 
+        static void MigrateCarParts(CarColorAppearance profile)
+        {
+            profile.carWindowFrameColor = profile.carTrimColor;
+            profile.carFrontSplitterColor = profile.carTrimColor;
+            profile.carLightStripColor = profile.carHeadlightColor;
+        }
+
         /// <summary>按稳定编号取参数，两个车漆相同也不会串色；负数表示问号车。</summary>
         public CarColorAppearance GetCarAppearance(int colorIndex)
         {
-            if (carAppearanceVersion == 0 || carAppearanceByColor == null || carAppearanceByColor.Length < Palette.Count || hiddenCarAppearance == null)
+            if (carAppearanceVersion < 2 || carAppearanceByColor == null || carAppearanceByColor.Length < Palette.Count || hiddenCarAppearance == null)
                 EnsureCarAppearances();
             if (colorIndex < 0) return hiddenCarAppearance;
             int index = colorIndex % Palette.Count;

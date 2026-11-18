@@ -137,14 +137,16 @@ namespace LoopPark.EditorTools
                 preview.camera.transform.position = new Vector3(0, 0, -10);
                 preview.camera.clearFlags = CameraClearFlags.SolidColor;
                 preview.camera.backgroundColor = new Color(0.36f, 0.37f, 0.52f);
-                preview.lights[0].intensity = 0.8f;
-                preview.lights[0].transform.rotation = Quaternion.Euler(35, -25, 0);
-                preview.lights[1].intensity = 0.4f;
-                preview.ambientColor = new Color(0.55f, 0.55f, 0.55f);
+                preview.lights[0].intensity = config.carKeyLightIntensity;
+                var direction = config.carKeyLightDirection;
+                preview.lights[0].transform.rotation = Quaternion.LookRotation(direction.sqrMagnitude > 0.001f ? direction : Vector3.forward);
+                preview.lights[1].intensity = 0;
+                preview.ambientColor = config.carAmbientLight;
                 for (int i = 0; i < Palette.Count; i++)
                 {
                     var go = Object.Instantiate(prefab);
                     go.transform.position = new Vector3(-2.0f + i % 5, 1.45f - i / 5 * 1.45f, 0);
+                    go.transform.rotation = Quaternion.AngleAxis(config.carViewTilt, Vector3.right) * Quaternion.Euler(0, 0, 180);
                     go.transform.localScale = new Vector3(config.carModelScale.x, config.carModelScale.y, 1) * 0.65f;
                     go.GetComponent<CarSkin3D>().SetCarColor(Palette.Get(i), false, i);
                     preview.AddSingleGO(go);
