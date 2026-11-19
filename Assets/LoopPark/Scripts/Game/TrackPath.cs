@@ -73,8 +73,43 @@ namespace LoopPark
             return s + (center.x + a - r - x);
         }
 
+        public Vector3[] ParkingPath(float fromS, Vector3 slot, float turnDepth)
+        {
+            var start = Eval(fromS, out var tangent);
+            var end = new Vector2(slot.x, TopY - turnDepth);
+            var p1 = start + tangent * ((start.x - end.x) * 0.55f);
+            var p2 = end + Vector2.up * (turnDepth * 0.55f);
+            const int samples = 12;
+            var points = new Vector3[samples + 1];
+            for (int i = 1; i <= samples; i++)
+            {
+                float t = (float)i / samples, u = 1f - t;
+                points[i - 1] = u * u * u * start + 3f * u * u * t * p1 + 3f * u * t * t * p2 + t * t * t * end;
+            }
+            points[samples] = slot;
+            return points;
+        }
+
         /// <summary>下边（向右行驶）某个 x 处的 s。</summary>
         public float SAtBottom(float x) => Wrap(x - center.x);
+
+        public float DeparturePath(Vector3 start, float endS, Vector3[] points)
+        {
+            Vector3 end = Eval(endS, out var tangent);
+            var p1 = start + Vector3.up * ((end.y - start.y) * 0.55f);
+            var p2 = end - (Vector3)tangent * ((end.x - start.x) * 0.6f);
+            float distance = 0f;
+            var previous = start;
+            for (int i = 0; i < points.Length; i++)
+            {
+                float t = (i + 1f) / points.Length, u = 1f - t;
+                var point = u * u * u * start + 3f * u * u * t * p1 + 3f * u * t * t * p2 + t * t * t * end;
+                points[i] = point;
+                distance += Vector3.Distance(previous, point);
+                previous = point;
+            }
+            return distance;
+        }
 
         public float TopY => center.y + b;
         public float BottomY => center.y - b;

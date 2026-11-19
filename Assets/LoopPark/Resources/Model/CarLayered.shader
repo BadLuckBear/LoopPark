@@ -14,10 +14,43 @@ Shader "LoopPark/Layered Car"
         _SpecColor ("高光颜色", Color) = (0.08,0.08,0.08,1)
         _Glossiness ("光滑度", Range(0,1)) = 0.18
         _CarDepth ("整车深度", Float) = -2
+        [HideInInspector] _CarOutlineCenter ("Car outline center", Vector) = (0,0,0,0)
     }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
+        Pass
+        {
+            Name "CAR_OUTLINE"
+            Tags { "LightMode"="Always" }
+            Cull Off
+            ZWrite On
+
+            CGPROGRAM
+            #pragma vertex outlineVert
+            #pragma fragment outlineFrag
+            #include "UnityCG.cginc"
+
+            float _CarDepth;
+            float4 _CarOutlineCenter;
+
+            float4 outlineVert(float4 vertex : POSITION) : SV_POSITION
+            {
+                float4 world = mul(unity_ObjectToWorld, vertex);
+                world.xy += (world.xy - _CarOutlineCenter.xy) * 0.055 + float2(0, -0.012);
+                // Keep the silhouette behind the car while using its existing sort depth.
+                world.z = _CarDepth + world.z * 0.02 + 0.03;
+                return mul(UNITY_MATRIX_VP, world);
+            }
+
+            fixed4 outlineFrag() : SV_Target
+            {
+                clip(_CarOutlineCenter.w - 0.5);
+                return fixed4(0.035, 0.037, 0.05, 1);
+            }
+            ENDCG
+        }
+
         CGPROGRAM
         #pragma surface surf StandardSpecular vertex:vert noforwardadd
         #pragma target 3.0

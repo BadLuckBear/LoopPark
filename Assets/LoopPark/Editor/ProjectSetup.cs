@@ -9,6 +9,12 @@ namespace LoopPark.EditorTools
     public static class ProjectSetup
     {
         const string ScenePath = "Assets/LoopPark/Scenes/Main.unity";
+        internal static string[] AppScenePaths() => new[]
+        {
+            "Assets/LoopPark/Scenes/Loading.unity",
+            "Assets/LoopPark/Scenes/Home.unity",
+            "Assets/LoopPark/Scenes/Game.unity"
+        };
         const string LevelDir = "Assets/LoopPark/Resources/Levels";
         const string SkinPath = "Assets/LoopPark/Resources/LoopParkSkin.asset";
         public const int LevelCount = 60;
@@ -27,7 +33,11 @@ namespace LoopPark.EditorTools
             c.clearFlags = CameraClearFlags.SolidColor;
             new GameObject("Bootstrap").AddComponent<Bootstrap>();
             EditorSceneManager.SaveScene(scene, ScenePath);
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
+            var appScenes = AppScenePaths();
+            if (System.Array.TrueForAll(appScenes, File.Exists))
+                EditorBuildSettings.scenes = System.Array.ConvertAll(appScenes, path => new EditorBuildSettingsScene(path, true));
+            else
+                EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
 
             if (AssetDatabase.LoadAssetAtPath<SkinConfig>(SkinPath) == null)
             {
@@ -120,12 +130,17 @@ namespace LoopPark.EditorTools
         [MenuItem("LoopPark/4. 构建 Android APK")]
         public static void BuildAndroid()
         {
+            var scenes = AppScenePaths();
+            foreach (var path in scenes)
+                if (!AssetDatabase.LoadAssetAtPath<SceneAsset>(path))
+                    throw new UnityEditor.Build.BuildFailedException($"Missing required Android scene: {path}");
+
             EditorUserBuildSettings.buildAppBundle = false;
             PlayerSettings.SetScriptingBackend(UnityEditor.Build.NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
             var opts = new BuildPlayerOptions
             {
-                scenes = new[] { ScenePath },
+                scenes = scenes,
                 locationPathName = "Builds/Android/LoopPark.apk",
                 target = BuildTarget.Android,
                 options = BuildOptions.None,

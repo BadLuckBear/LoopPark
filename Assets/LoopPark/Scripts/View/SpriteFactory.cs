@@ -308,24 +308,6 @@ namespace LoopPark
             return Make(key, tex, w);
         }
 
-        /// <summary>3D 车下方的柔和阴影。</summary>
-        public static Sprite CarShadow()
-        {
-            const string key = "carShadow";
-            if (cache.TryGetValue(key, out var s)) return s;
-            var tex = NewTex(CW, CH);
-            var px = new Color[CW * CH];
-            var c = new Vector2(CW / 2f, CH / 2f);
-            for (int y = 0; y < CH; y++)
-            for (int x = 0; x < CW; x++)
-            {
-                float d = RoundBox(new Vector2(x + .5f, y + .5f), c, new Vector2(38, 52), 22);
-                px[y * CW + x] = new Color(0, 0, 0, 0.32f * Mathf.Clamp01(0.5f - d / 8f));
-            }
-            tex.SetPixels(px);
-            return Make(key, tex, CW);
-        }
-
         public static Sprite CarDetail()
         {
             if (SkinConfig.Instance.carDetail != null) return SkinConfig.Instance.carDetail;

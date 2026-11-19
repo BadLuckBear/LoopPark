@@ -46,7 +46,8 @@ Material:
     - _Glossiness: 0.47
     - _OcclusionStrength: 1
     m_Colors:
-    - _Color: {r: 0.9127451, g: 0.7152941, b: 0.8009804, a: 1}
+    - _CarOutlineCenter: {r: 0, g: 0, b: 0, a: 0}
+    - _Color: {r: 1, g: 0.48627448, b: 0.6187159, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.035, g: 0.035, b: 0.035, a: 1}
   m_BuildTextureStacks: []

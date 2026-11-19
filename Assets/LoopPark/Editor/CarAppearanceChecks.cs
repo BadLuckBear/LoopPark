@@ -72,6 +72,10 @@ namespace LoopPark.EditorTools
                 foreach (var renderer in skin.GetComponentsInChildren<MeshRenderer>())
                 {
                     renderer.GetPropertyBlock(block, 0);
+                    var p = skin.transform.position;
+                    Require(block.GetVector("_CarOutlineCenter") == new Vector4(p.x, p.y, 0f, 1f), "车身阴影未跟随模型中心");
+                    foreach (var material in renderer.sharedMaterials)
+                        Require(material != null && material.FindPass("CAR_OUTLINE") >= 0, "车辆材质缺少轮廓阴影通道");
                     float expected = -2f + car.transform.position.y * 0.05f;
                     if (car.state == CarState.Parked || car.state == CarState.InLane)
                         Require(Mathf.Approximately(block.GetFloat("_CarDepth"), expected), "车辆部件未使用同一位置深度");

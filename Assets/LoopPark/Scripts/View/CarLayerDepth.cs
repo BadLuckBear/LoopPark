@@ -12,6 +12,7 @@ namespace LoopPark
         MaterialPropertyBlock block;
         int layer = 20;
         static readonly int DepthId = Shader.PropertyToID("_CarDepth");
+        static readonly int OutlineCenterId = Shader.PropertyToID("_CarOutlineCenter");
 
         /// <summary>绑定车辆根节点，所有独立网格共用同一排序基准。</summary>
         public void Initialize(Transform root)
@@ -34,6 +35,8 @@ namespace LoopPark
             if (anchor == null || renderers == null) return;
             // 只改变 Shader 深度，保留 XY 外观、物理位置和完整的车内自遮挡。
             float depth = -2f + anchor.position.y * 0.05f - (layer - 20) * 0.2f;
+            Vector3 center = transform.position;
+            var outlineCenter = new Vector4(center.x, center.y, 0f, 1f);
             for (int i = 0; i < renderers.Length; i++)
             {
                 var renderer = renderers[i];
@@ -41,6 +44,7 @@ namespace LoopPark
                 {
                     renderer.GetPropertyBlock(block, slot);
                     block.SetFloat(DepthId, depth);
+                    block.SetVector(OutlineCenterId, outlineCenter);
                     renderer.SetPropertyBlock(block, slot);
                 }
             }

@@ -6,7 +6,13 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/LoopPark/Scenes/Main.unity
-    guid: 67bd54bcf0961c248baaf0b53a40e36a
+    path: Assets/LoopPark/Scenes/Loading.unity
+    guid: 019a7c4c06016f24789a098b55980730
+  - enabled: 1
+    path: Assets/LoopPark/Scenes/Home.unity
+    guid: e19ea05bf3b64084a83e0f1eb14090cb
+  - enabled: 1
+    path: Assets/LoopPark/Scenes/Game.unity
+    guid: 65cd6601ce146894b8c1f2cedccb7a9f
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

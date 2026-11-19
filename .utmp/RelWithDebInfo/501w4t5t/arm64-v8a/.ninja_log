@@ -1,0 +1,12 @@
+# ninja log v5
+1147	2202	8167085434106989	FramePacing/CMakeFiles/swappywrapper.dir/UnitySwappyWrapper.cpp.o	9c08a5e3cb283eec
+2207	2999	8167085441822640	D:/Game/ParkingLoop/LoopPark/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/501w4t5t/obj/arm64-v8a/libswappywrapper.so	e0910dc4da314d1a
+458	4851	8167085460288329	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	48e533b28555a960
+170	4877	8167085460438043	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	e5e224c6c6487b48
+2	5063	8167085462479253	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	2d2b1fe72b5294a5
+591	5154	8167085463422515	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	564ca4595b71d8e7
+848	5902	8167085469401422	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	efa2def644712d4
+999	7012	8167085480974884	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	333ef5626ccf521e
+713	7698	8167085487906994	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	cd2d8f76d76156b2
+317	8900	8167085498876623	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	11048d1b22164757
+8902	11636	8167085525177731	D:/Game/ParkingLoop/LoopPark/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/501w4t5t/obj/arm64-v8a/libgame.so	43500270e6c2f47f

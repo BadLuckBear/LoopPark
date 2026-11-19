@@ -78,11 +78,20 @@ namespace LoopPark
 
         public void ShowHome()
         {
+            const string homeScene = "Home";
+            if (!Application.CanStreamedLevelBeLoaded(homeScene))
+            {
+                Debug.LogError("[LoopPark] Home scene is missing from the build.");
+                ShowTip("当前版本缺少主页，请更新游戏", 2f);
+                return;
+            }
             CloseModal();
             game.Cleanup();
             tutorial.Stop();
-            SceneManager.LoadScene("Home");
+            SceneManager.LoadScene(homeScene);
         }
+
+        void OnDestroy() => SaveSystem.Changed -= RefreshBars;
 
         void RefreshBars()
         {

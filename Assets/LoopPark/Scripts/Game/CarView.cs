@@ -8,7 +8,6 @@ namespace LoopPark
     {
         InLane,     // 在发车道排队
         ToLoop,     // 从发车道开往环路
-        WaitMerge,  // 在汇入点等待空位
         OnLoop,     // 在环路上行驶
         Entering,   // 驶入停车列
         Parked,     // 停在列里
@@ -29,7 +28,6 @@ namespace LoopPark
         public bool hidden;
         public CarState state;
         public float s;          // 环路参数
-        public float mergeS;     // 待汇入位置
         public int lane = -1;
         public int column = -1;
         public int link;
@@ -64,6 +62,10 @@ namespace LoopPark
         // 路径移动
         readonly List<Vector3> path = new List<Vector3>();
         float moveSpeed;
+        float parkingSpeed, parkingAcceleration, parkingDistance;
+        CarView parkingLeader;
+        float parkingGap;
+        float departureElapsed, departureRamp, departureDuration;
         Action onArrive;
         bool faceMovement;
         float targetAngle;
@@ -109,8 +111,6 @@ namespace LoopPark
                 modelDepth = inst.AddComponent<CarLayerDepth>();
                 modelDepth.Initialize(transform);
                 customSkin = inst.GetComponentInChildren<ICarSkin>();
-                under = NewLayer("Shadow", SpriteFactory.CarShadow(), -1);
-                under.transform.localPosition = new Vector3(0.06f, -0.08f, 0);
             }
             else
             {
@@ -239,9 +239,52 @@ namespace LoopPark
             path.Clear();
             path.AddRange(points);
             moveSpeed = speed;
+            parkingAcceleration = 0f;
+            parkingLeader = null;
+            departureDuration = 0f;
             onArrive = done;
             faceMovement = face;
             brakeOnArrive = brake;
+        }
+
+        public void ParkAlong(IList<Vector3> points, float entrySpeed, float maxSpeed, float acceleration, Action done,
+            bool face = true, CarView leader = null, float gap = 0f)
+        {
+            MoveAlong(points, maxSpeed, done, face);
+            parkingSpeed = entrySpeed;
+            parkingAcceleration = acceleration;
+            parkingLeader = leader;
+            parkingGap = gap;
+            parkingDistance = 0f;
+            var previous = transform.localPosition;
+            foreach (var point in points)
+            {
+                parkingDistance += Vector3.Distance(previous, point);
+                previous = point;
+            }
+        }
+
+        internal static float ParkingFollowStep(float step, float y, float leaderY, float gap) =>
+            Mathf.Min(step, Mathf.Max(0f, y - leaderY - gap));
+
+        static float DepartureRamp(float distance, float speed) => Mathf.Min(0.35f, 2f * distance / speed);
+
+        public static float DepartureTime(float distance, float speed) => distance / speed + DepartureRamp(distance, speed) * 0.5f;
+
+        public void DepartAlong(IList<Vector3> points, float distance, float speed, Action done)
+        {
+            MoveAlong(points, speed, done, brake: false);
+            departureElapsed = 0f;
+            departureRamp = DepartureRamp(distance, speed);
+            departureDuration = DepartureTime(distance, speed);
+        }
+
+        internal static float DepartureDistance(float elapsed, float ramp, float speed)
+        {
+            if (elapsed >= ramp) return speed * (elapsed - ramp * 0.5f);
+            float t = elapsed / ramp;
+            // Integral of the smoothstep speed ramp, so progress is independent of frame rate.
+            return speed * ramp * t * t * t * (1f - 0.5f * t);
         }
 
         public void BeginTireTrail(Transform parent)
@@ -251,10 +294,10 @@ namespace LoopPark
         }
 
         /// <summary>刹车前倾：车头朝行驶方向点一下再回弹（倒退停车则车尾下沉）。</summary>
-        public void Brake(float strength = 1f)
+        public void Brake(float strength = 1f, bool movingForward = false)
         {
             var dir = transform.parent != null ? transform.parent.TransformDirection(lastMoveDir) : lastMoveDir;
-            float sign = Vector3.Dot(dir, transform.up) >= 0 ? 1f : -1f;
+            float sign = movingForward || Vector3.Dot(dir, transform.up) >= 0 ? 1f : -1f;
             pitchVel += sign * SkinConfig.Instance.brakeStrength * strength;
         }
 
@@ -368,6 +411,25 @@ namespace LoopPark
             {
                 var pos = transform.localPosition;
                 float step = moveSpeed * dt;
+                if (departureDuration > 0f)
+                {
+                    float nextElapsed = departureElapsed + dt;
+                    step = nextElapsed >= departureDuration ? float.PositiveInfinity :
+                        DepartureDistance(nextElapsed, departureRamp, moveSpeed) - DepartureDistance(departureElapsed, departureRamp, moveSpeed);
+                    departureElapsed = nextElapsed;
+                }
+                else if (parkingAcceleration > 0f)
+                {
+                    float stoppingSpeed = Mathf.Sqrt(2f * parkingAcceleration * parkingDistance);
+                    parkingSpeed = Mathf.Min(stoppingSpeed, Mathf.MoveTowards(parkingSpeed, moveSpeed, parkingAcceleration * dt));
+                    step = dt > 0f && parkingDistance < 0.002f ? 0.003f : parkingSpeed * dt;
+                    if (parkingLeader != null && parkingLeader.state == CarState.Entering && dt > 0f)
+                    {
+                        step = ParkingFollowStep(step, pos.y, parkingLeader.transform.localPosition.y, parkingGap);
+                        parkingSpeed = Mathf.Min(parkingSpeed, step / dt);
+                    }
+                    parkingDistance = Mathf.Max(0f, parkingDistance - step);
+                }
                 while (step > 0 && path.Count > 0)
                 {
                     var to = path[0];

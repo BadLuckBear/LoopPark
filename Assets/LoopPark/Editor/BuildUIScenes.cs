@@ -50,12 +50,8 @@ public static class BuildUIScenes
         CreateScene("Home", home);
         if (!AssetDatabase.LoadAssetAtPath<SceneAsset>(Root + "/Scenes/Game.unity"))
             AssetDatabase.CopyAsset(Root + "/Scenes/Main.unity", Root + "/Scenes/Game.unity");
-        EditorBuildSettings.scenes = new[]
-        {
-            new EditorBuildSettingsScene(Root + "/Scenes/Loading.unity", true),
-            new EditorBuildSettingsScene(Root + "/Scenes/Home.unity", true),
-            new EditorBuildSettingsScene(Root + "/Scenes/Game.unity", true)
-        };
+        EditorBuildSettings.scenes = System.Array.ConvertAll(
+            LoopPark.EditorTools.ProjectSetup.AppScenePaths(), path => new EditorBuildSettingsScene(path, true));
         AssetDatabase.SaveAssets();
         Debug.Log("[LoopPark] Loading, Home, Game scenes and UI prefabs created.");
     }

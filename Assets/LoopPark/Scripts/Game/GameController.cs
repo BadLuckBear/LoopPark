@@ -32,8 +32,8 @@ namespace LoopPark
         public event Action Failed;
 
         // ---------- 布局 ----------
-        // 保留首尾紧贴的队列间距，交叠区域由车辆渲染层级决定遮挡。
-        const float QueuedRowSpacing = 0.88f;
+        // 停车列和发车队列使用相同的排距。
+        const float QueuedRowSpacing = 0.96f;
         float cell, carW, laneW, colGap, pad, gateH;
         float lotW, lotH, lotCy;
         float[] colX, entryS;
@@ -41,6 +41,7 @@ namespace LoopPark
         float[] laneX;
         float laneFrontY, laneStep, laneMinY;
         float loopSpeed, moveSpeed, spacing;
+        float ParkingSpeed => loopSpeed * 0.78f;
         TrackPath track;
 
         // ---------- 状态 ----------
@@ -49,11 +50,14 @@ namespace LoopPark
         int[] incoming;
         List<CarView>[] lanes;
         readonly List<CarView> loopCars = new List<CarView>();
-        readonly List<CarView> waiting = new List<CarView>();
         readonly List<CarView> queued = new List<CarView>();
         readonly List<CarView> allCars = new List<CarView>();
-        readonly Dictionary<CarView, Vector3> mergeOffset = new Dictionary<CarView, Vector3>();
-        CarView mergingLaneCar;
+        readonly Dictionary<CarView, float> loopPositions = new Dictionary<CarView, float>();
+        readonly List<(CarView car, int column, float speed)> parkArrivals = new List<(CarView, int, float)>();
+        readonly Dictionary<CarView, float> loopSpeeds = new Dictionary<CarView, float>();
+        CarView mergingCar;
+        readonly Vector3[] departurePath = new Vector3[12];
+        float mergingS;
 
         class Rope
         {
@@ -149,11 +153,12 @@ namespace LoopPark
             if (root != null) Destroy(root.gameObject);
             root = null;
             loopCars.Clear();
-            waiting.Clear();
             queued.Clear();
-            mergingLaneCar = null;
+            mergingCar = null;
             allCars.Clear();
-            mergeOffset.Clear();
+            loopPositions.Clear();
+            parkArrivals.Clear();
+            loopSpeeds.Clear();
             ropes.Clear();
             Level = null;
             Ended = true;
@@ -201,14 +206,13 @@ namespace LoopPark
             loopSpeed = track.Length / 4.6f;
             moveSpeed = 11f * cell;
             spacing = cell * 1.5f;
-            Debug.Assert(spacing > carW * 1.5f, "汇入车距不足以容纳当前放大的车模型");
 
             colX = new float[C];
             entryS = new float[C];
             for (int j = 0; j < C; j++)
             {
                 colX[j] = -lotW / 2 + pad + cell / 2 + j * (cell + colGap);
-                entryS[j] = track.SAtTop(colX[j]);
+                entryS[j] = track.SAtTop(colX[j] + 0.34f * cell);
             }
             colBottomY = lotCy - lotH / 2 + pad + gateH;
 
@@ -218,7 +222,7 @@ namespace LoopPark
             float step = L > 1 ? Mathf.Min(1.3f * cell, 2 * maxHalf * 0.95f / (L - 1)) : 0;
             for (int i = 0; i < L; i++) laneX[i] = (i - (L - 1) / 2f) * step;
             laneFrontY = track.BottomY - laneW / 2 - 0.6f * cell - 0.5f * cell;
-            laneStep = cell * QueuedRowSpacing; // 配合 X1.4/Y1.2 的模型，使前后车接近首尾相接。
+            laneStep = cell * QueuedRowSpacing;
             laneMinY = -H + 2.5f;
         }
 
@@ -630,7 +634,7 @@ namespace LoopPark
         {
             int n = queued.Count;
             foreach (var c in allCars)
-                if (c != null && (c.state == CarState.ToLoop || c.state == CarState.WaitMerge || c.state == CarState.OnLoop || c.state == CarState.Ejecting))
+                if (c != null && (c.state == CarState.ToLoop || c.state == CarState.OnLoop || c.state == CarState.Ejecting))
                     n++;
             if (n != LoopCount)
             {
@@ -698,10 +702,11 @@ namespace LoopPark
             }
 
             var car = front;
+            if (pl >= 0 && laneX[pl] > laneX[l]) queued.Add(front.partner);
             queued.Add(car);
             if (pl >= 0)
             {
-                queued.Add(front.partner);
+                if (laneX[pl] <= laneX[l]) queued.Add(front.partner);
                 SnapRope(car);
                 Emit("linkgo", car);
             }
@@ -712,10 +717,20 @@ namespace LoopPark
             return true;
         }
 
-        CarView Dispatch(int l)
+        void Dispatch(int l, float mergeS, float distance)
         {
             var car = lanes[l][0];
             lanes[l].RemoveAt(0);
+            car.Reveal();
+            car.state = CarState.ToLoop;
+            car.SetLayer(30);
+            car.PlayEvent("tap");
+            car.SetIdle(false);
+            DriveToMerge(car, mergeS, loopSpeed, departurePath, distance);
+        }
+
+        void AdvanceLane(int l)
+        {
             if (genLeft[l] > 0)
             {
                 // 车库保持在原位置，吐出一辆车
@@ -734,33 +749,17 @@ namespace LoopPark
                 var lc = lanes[l][k];
                 if (InGarage(l, k)) continue;
                 lc.gameObject.SetActive(LanePos(l, VisualIndex(l, k)).y > laneMinY - laneStep);
-                lc.MoveAlong(new[] { LanePos(l, VisualIndex(l, k)) }, moveSpeed * 0.6f, null, false);
+                lc.ParkAlong(new[] { LanePos(l, VisualIndex(l, k)) }, 0f, moveSpeed * 0.6f, moveSpeed, null, face: false);
             }
             if (lanes[l].Count > 0) lanes[l][0].Reveal();
             UpdateLaneVisibility(l);
             TryUnlock();
-
-            car.Reveal();
-            car.state = CarState.ToLoop;
-            car.SetLayer(30);
-            car.Punch(0.3f);
-            car.PlayEvent("tap");
-            var waitPos = new Vector3(laneX[l], track.BottomY - laneW * 0.55f, 0);
-            car.mergeS = track.SAtBottom(laneX[l]);
-            car.SetIdle(false);
-            car.MoveAlong(new[] { waitPos }, moveSpeed, () =>
-            {
-                car.state = CarState.WaitMerge;
-                waiting.Add(car);
-            }, true, false);   // 汇入点通常马上并入环路，不做刹车
-            car.BeginTireTrail(fxRoot);
-            return car;
         }
 
-        void Enter(CarView car, int j)
+        void Enter(CarView car, int j, float entrySpeed)
         {
             loopCars.Remove(car);
-            mergeOffset.Remove(car);
+            loopSpeeds.Remove(car);
             car.state = CarState.Entering;
             car.column = j;
             car.lane = -1;
@@ -774,41 +773,26 @@ namespace LoopPark
                 ejected = c[0];
                 c.RemoveAt(0);
             }
-            // 列内车辆下移
-            for (int i = 0; i < c.Count - 1; i++)
-            {
-                var pc = c[i];
-                if (pc.state == CarState.Parked)
-                    pc.MoveAlong(new[] { SlotPos(j, i) }, moveSpeed * 0.8f, null, false);
-            }
+            CarView leader = incoming[j] > 1 ? c[c.Count - 2] : null;
 
             int slot = c.Count - 1;
-            var entryPt = new Vector3(colX[j], ColTopY + gateH + 0.1f * cell, 0);
             car.SetLayer(30);
-            car.MoveAlong(new[] { entryPt, SlotPos(j, slot) }, moveSpeed, () => OnCarParked(car, j));
+            car.ParkAlong(track.ParkingPath(car.s, SlotPos(j, slot), 0.65f * cell),
+                entrySpeed, ParkingSpeed, moveSpeed, () => OnCarParked(car, j), leader: leader, gap: laneStep - 0.001f * cell);
             car.BeginTireTrail(fxRoot);
             StartCoroutine(EmitWheelSmoke(car));
 
             if (ejected != null)
             {
-                // 被挤出的车如果还在驶入途中，要把驶入计数还回去，否则该列永远无法消除
-                if (ejected.state == CarState.Entering) incoming[j]--;
-                ejected.StopMove();
+                for (int i = 0; i < slot; i++)
+                    c[i].MoveAlong(new[] { SlotPos(j, i) }, moveSpeed * 0.8f, null, false);
                 ejected.state = CarState.Ejecting;
                 ejected.column = -1;
                 ejected.SetLayer(30);
                 ejected.Reveal();
                 ejected.PlayEvent("push");
                 if (ejected.hasKey) ReleaseKey(ejected);
-                var exitPt = new Vector3(colX[j], colBottomY - gateH - 0.1f * cell, 0);
-                var waitPt = new Vector3(colX[j], track.BottomY + laneW * 0.5f, 0);
-                ejected.mergeS = track.SAtBottom(colX[j]);
-                ejected.MoveAlong(new[] { exitPt, waitPt }, moveSpeed * 0.9f, () =>
-                {
-                    ejected.state = CarState.WaitMerge;
-                    waiting.Add(ejected);
-                }, true, false);
-                ejected.BeginTireTrail(fxRoot);
+                DriveToMerge(ejected, track.SAtBottom(colX[j]), moveSpeed * 0.9f);
                 Sfx.Play("push");
                 Emit("push", ejected);
             }
@@ -846,8 +830,7 @@ namespace LoopPark
             }
             sb.Append(" loop:");
             foreach (var c in loopCars) sb.Append(c.color).Append(',');
-            sb.Append(" wait:");
-            foreach (var c in waiting) sb.Append(c.color).Append(',');
+            if (mergingCar != null) sb.Append(" merging:").Append(mergingCar.color);
             sb.Append($" count {LoopCount}/{LoopLimit}");
             return sb.ToString();
         }
@@ -865,7 +848,6 @@ namespace LoopPark
             autoIdle = 0;
             car.state = CarState.Parked;
             car.SetLayer(20);
-            car.Punch(0.2f);
             car.PlayEvent("park");
             incoming[j]--;
             Sfx.Play("park", 1f + 0.05f * cols[j].Count);
@@ -952,7 +934,6 @@ namespace LoopPark
 
             HandleInput();
             MoveLoop(dt);
-            ProcessMerges();
             ProcessDispatchQueue();
             CheckStuck(dt);
             AnimateCounter(dt);
@@ -991,85 +972,133 @@ namespace LoopPark
 
         void MoveLoop(float dt)
         {
-            if (mergingLaneCar != null) return;
-            float ds = loopSpeed * dt;
-            for (int i = loopCars.Count - 1; i >= 0; i--)
+            if (dt <= 0f) return;
+            loopPositions.Clear();
+            parkArrivals.Clear();
+            // 所有车辆读取同一帧的前车位置，结果不受更新顺序影响。
+            foreach (var car in loopCars) loopPositions.Add(car, car.s);
+            // 车尾离开环道前，后车仍需给入库车辆留出车距。
+            for (int j = 0; j < incoming.Length; j++)
             {
-                var car = loopCars[i];
-                float prev = car.s;
-                car.s = track.Wrap(car.s + ds);
-                var p = track.Eval(car.s, out var dir);
-                Vector3 pos = p;
-                if (mergeOffset.TryGetValue(car, out var off))
-                {
-                    off *= Mathf.Exp(-9f * dt);
-                    mergeOffset[car] = off;
-                    pos += off;
-                }
-                car.transform.localPosition = pos;
-                car.SetAngle(Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f, false);
+                if (incoming[j] == 0) continue;
+                var entering = cols[j][cols[j].Count - 1];
+                if (!ParkingTailClear(entering))
+                    loopPositions.Add(entering, entering.s);
+            }
 
-                if (Ended) continue;
-                // 经过列入口？（从右到左依次经过）
-                float moved = ds;
+            foreach (var car in loopCars)
+            {
+                float prev = car.s;
+                float free = float.PositiveInfinity;
+                foreach (var front in loopPositions)
+                {
+                    if (front.Key != car) free = Mathf.Min(free, track.Forward(prev, front.Value) - spacing);
+                }
+                if (mergingCar != null) free = Mathf.Min(free, track.Forward(prev, mergingS) - spacing);
+
                 int target = -1;
                 float bestAhead = float.MaxValue;
-                for (int j = 0; j < entryS.Length; j++)
+                for (int j = 0; !Ended && j < entryS.Length; j++)
                 {
-                    float ahead = track.Forward(prev, entryS[j]);
-                    if (ahead <= moved && ahead < bestAhead && CanEnter(j, car.color))
+                    float ahead = track.Forward(prev, track.Wrap(entryS[j]));
+                    if (ahead < bestAhead && CanEnter(j, car.color))
                     {
                         bestAhead = ahead;
                         target = j;
                     }
                 }
-                if (target >= 0) Enter(car, target);
+
+                float room = Mathf.Max(0f, free);
+                float speedLimit = Mathf.Min(loopSpeed, Mathf.Sqrt(2f * moveSpeed * room));
+                if (target >= 0)
+                {
+                    float turnSpeed = ParkingEntryReady(car, target, true) ? ParkingSpeed : 0f;
+                    speedLimit = Mathf.Min(speedLimit, Mathf.Sqrt(turnSpeed * turnSpeed + 2f * moveSpeed * bestAhead));
+                }
+                float oldSpeed = loopSpeeds[car];
+                float nextSpeed = Mathf.Min(oldSpeed + moveSpeed * dt, speedLimit);
+                float step = Mathf.Min(bestAhead, Mathf.Min(room, nextSpeed * dt));
+                bool atEntry = target >= 0 && bestAhead <= step;
+                car.s = atEntry ? track.Wrap(entryS[target]) : track.Wrap(prev + step);
+                float speed = step / dt;
+                if (oldSpeed > loopSpeed * 0.5f && nextSpeed <= loopSpeed * 0.5f) car.Brake(0.5f, movingForward: true);
+                loopSpeeds[car] = speed;
+                car.transform.localPosition = track.Eval(car.s, out var dir);
+                car.SetAngle(Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f, false);
+                if (atEntry) parkArrivals.Add((car, target, Mathf.Min(nextSpeed, ParkingSpeed)));
+            }
+
+            foreach (var (car, column, speed) in parkArrivals)
+            {
+                if (!CanEnter(column, car.color) || !ParkingEntryReady(car, column, false)) continue;
+                Enter(car, column, speed);
             }
         }
 
-        void ProcessMerges()
+        bool ParkingTailClear(CarView car) => track.TopY - car.transform.localPosition.y >= laneStep;
+
+        bool ParkingEntryReady(CarView car, int j, bool useSnapshot)
         {
-            for (int i = 0; i < waiting.Count; i++)
+            var column = cols[j];
+            if (column.Count < Level.capacity)
+                return incoming[j] == 0 || ParkingTailClear(column[column.Count - 1]);
+            if (incoming[j] > 0) return false;
+            var outgoing = column[0];
+            float s = track.SAtBottom(colX[j]);
+            float travel = Vector3.Distance(outgoing.transform.localPosition, track.Eval(s, out _)) / (moveSpeed * 0.9f);
+            return !outgoing.Moving && CanStartMerge(s, travel, car, useSnapshot);
+        }
+
+        void DriveToMerge(CarView car, float s, float speed, Vector3[] curve = null, float distance = 0f)
+        {
+            mergingCar = car;
+            mergingS = curve == null ? s : track.SAtBottom(laneX[car.lane]);
+            void Arrive()
             {
-                var car = waiting[i];
-                if (mergingLaneCar != null && car != mergingLaneCar) continue;
-                if (!GapFree(car.mergeS)) continue;
-                waiting.RemoveAt(i);
-                var p = track.Eval(car.mergeS, out _);
-                car.s = car.mergeS;
+                if (mergingCar != car) return;
+                Debug.Assert(loopCars.TrueForAll(other =>
+                    track.Forward(other.s, s) >= spacing - 0.001f * cell &&
+                    track.Forward(s, other.s) >= spacing - 0.001f * cell), "并线完成时环道车距不足");
+                car.s = s;
                 car.state = CarState.OnLoop;
-                car.SetLayer(30);
-                mergeOffset[car] = car.transform.localPosition - (Vector3)p;
+                loopSpeeds.Add(car, loopSpeed);
                 loopCars.Add(car);
-                if (car == mergingLaneCar) mergingLaneCar = null;
-                break;
+                mergingCar = null;
+                if (curve != null) AdvanceLane(car.lane);
             }
+            if (curve == null) car.MoveAlong(new[] { (Vector3)track.Eval(s, out _) }, speed, Arrive, brake: false);
+            else car.DepartAlong(curve, distance, speed, Arrive);
+            car.BeginTireTrail(fxRoot);
         }
 
         void ProcessDispatchQueue()
         {
-            if (mergingLaneCar != null || waiting.Count > 0 || queued.Count == 0) return;
-            foreach (var car in allCars)
-                if (car != null && car.state == CarState.Ejecting) return;
-
-            int next = 0;
-            for (int i = 1; i < queued.Count; i++)
-                if (laneX[queued[i].lane] > laneX[queued[next].lane]) next = i;
-
-            var chosen = queued[next];
-            if (!GapFree(track.SAtBottom(laneX[chosen.lane]))) return;
+            if (Ended || mergingCar != null || queued.Count == 0) return;
+            var chosen = queued[0];
+            if (chosen.Moving) return;
+            float startS = track.SAtBottom(laneX[chosen.lane]);
+            float s = track.Wrap(startS + 0.75f * cell);
+            float distance = track.DeparturePath(chosen.transform.localPosition, s, departurePath);
+            if (!CanStartMerge(s, CarView.DepartureTime(distance, loopSpeed), reservationStart: startS)) return;
             Debug.Assert(lanes[chosen.lane].Count > 0 && lanes[chosen.lane][0] == chosen,
                 "待发车辆必须仍在车道队首");
-            queued.RemoveAt(next);
-            mergingLaneCar = Dispatch(chosen.lane);
+            queued.RemoveAt(0);
+            Dispatch(chosen.lane, s, distance);
         }
 
-        bool GapFree(float s)
+        bool CanStartMerge(float s, float travel, CarView departing = null, bool useSnapshot = false, float? reservationStart = null)
         {
+            if (mergingCar != null) return false;
+            // 按巡航速度预留后车在驶入期间能走的最远距离。
+            float rearClearance = spacing * 1.2f + travel * loopSpeed;
+            // 空档较短时，给后车留出在发车口前刹停的距离。
+            if (reservationStart.HasValue)
+                rearClearance = Mathf.Min(rearClearance, track.Forward(reservationStart.Value, s) + spacing + loopSpeed * loopSpeed / (2f * moveSpeed));
             foreach (var c in loopCars)
             {
-                if (track.Forward(c.s, s) < spacing * 1.2f) return false; // 后方来车
-                if (track.Forward(s, c.s) < spacing) return false;        // 前方车辆
+                if (c == departing) continue;
+                float position = useSnapshot ? loopPositions[c] : c.s;
+                if (track.Forward(position, s) < rearClearance || track.Forward(s, position) < spacing) return false;
             }
             return true;
         }
@@ -1092,7 +1121,6 @@ namespace LoopPark
 
             bool anyTarget = false;
             foreach (var c in loopCars) if (AnyTargetFor(c.color)) { anyTarget = true; break; }
-            if (!anyTarget) foreach (var c in waiting) if (AnyTargetFor(c.color)) { anyTarget = true; break; }
 
             bool canTap = false;
             for (int l = 0; l < lanes.Length; l++) if (LaneReady(l)) { canTap = true; break; }
