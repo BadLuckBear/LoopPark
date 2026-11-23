@@ -18,6 +18,7 @@ namespace LoopPark
     /// 读取属性块时不清空，保留 CarLayerDepth 每帧写入的 _CarDepth（车辆跨网格排序必需）。
     /// </summary>
     [DefaultExecutionOrder(100)] // 排在 CarLayerDepth（默认 0）之后，颜色补写在整车深度刷新之后
+    // 备注：只在吸盘处转动软管节点，不动整个附件，避免吸盘歪掉或漂到车顶边缘。
     public sealed class CarStrap : MonoBehaviour
     {
         [Tooltip("附件渲染器；留空时在 Awake 自动收集子渲染器。")]
@@ -58,6 +59,9 @@ namespace LoopPark
 
         /// <summary>绑带附件当前是否可见；供编辑器检查工具读取。</summary>
         public bool IsVisible => linked && !covered;
+
+        /// <summary>软管节点（旋转与拉伸的唯一对象）；供编辑器预览工具读取。</summary>
+        public Transform Hose => hose;
 
         void Awake()
         {
