@@ -183,6 +183,9 @@ namespace LoopPark
             stuckTimer = 0;
             transit = 0;
             TutorialLane = -1;
+            // 兜底：任何来源（编辑器暂停按钮、弹窗泄漏、SDK 回调）把 timeScale 置 0 后，
+            // 进关卡都强制恢复正常流速，避免整局冻结却看不出任何报错。
+            Time.timeScale = 1f;
             Remaining = d.TotalCars();
 
             root = new GameObject("Board").transform;
@@ -341,7 +344,7 @@ namespace LoopPark
 
             float qTop = H - 2 * H * (1780f / UIKit.DesignSize.y);
             float qHeight = qTop + H;
-            float queueHalf = Mathf.Abs(laneX[0]) + cell * .68f;
+            float queueHalf = (laneX != null && laneX.Length > 0 ? Mathf.Abs(laneX[0]) : 0f) + cell * .68f;
             float grassWidth = W - queueHalf;
             if (grassWidth > .1f)
             {
@@ -561,9 +564,13 @@ namespace LoopPark
             // 绑带：配对；视觉改由 3D 车顶吸盘附件（CarStrap）承担，不再画 2D 粗绳。
             var byLink = new Dictionary<int, CarView>();
             foreach (var lane in lanes)
-                foreach (var cv in lane)
+                for (int ci = 0; ci < lane.Count; ci++)
                 {
+                    var cv = lane[ci];
                     if (cv.link == 0) continue;
+                    // 给这一根「生成的套管」一个稳定编号（车道 + 车道内序号，同一关重跑不变），
+                    // 调色资产按它逐根存颜色 —— 否则同一对的两半管会被当成一根，无法单独调。
+                    if (cv.Strap != null) cv.Strap.SetHoseId("L" + cv.lane + "_" + ci);
                     if (byLink.TryGetValue(cv.link, out var other))
                     {
                         cv.partner = other;
@@ -751,6 +758,16 @@ namespace LoopPark
         {
             var car = lanes[l][0];
             lanes[l].RemoveAt(0);
+
+            // 第一辆车发车即通知双方进入「拉长一点点 -> 啪地扯断 -> 平滑消失」流程。
+            // 两边各调一次 SetLinked(false)：CarStrap 用同一基准间距与同一断口坐标，因此阈值与演出天然同步。
+            if (car.partner != null)
+            {
+                var partnerStrap = car.partner.Strap;   // 先取出来：SetLinked 只改绑带状态，不动 CarView.partner
+                car.SetLinked(false, partnerStrap);
+                car.partner.SetLinked(false, car.Strap);
+            }
+
             car.Reveal();
             car.state = CarState.ToLoop;
             car.SetLayer(30);
@@ -1063,9 +1080,11 @@ namespace LoopPark
             float bestD = float.MaxValue;
             for (int l = 0; l < laneX.Length; l++)
             {
-                float dx = Mathf.Abs(lp.x - laneX[l]);
-                if (dx > Mathf.Max(0.65f * cell, (laneX.Length > 1 ? Mathf.Abs(laneX[1] - laneX[0]) : cell) * 0.5f)) continue;
+                // 只要求点在发车区（车道上沿以下）；横向不再设硬性容差，
+                // 否则 Game 视图缩小后（如 0.39x）车道仅剩几十像素宽，
+                // 玩家指尖稍偏就整次点击被静默丢弃，表现为“点了没反应”。
                 if (lp.y > laneFrontY + 0.8f * cell) continue;
+                float dx = Mathf.Abs(lp.x - laneX[l]);
                 if (dx < bestD) { bestD = dx; best = l; }
             }
             if (best >= 0) TapLane(best);
@@ -1073,7 +1092,7 @@ namespace LoopPark
 
         void MoveLoop(float dt)
         {
-            if (dt <= 0f) return;
+            if (dt <= 0f || incoming == null || cols == null || track == null) return;
             loopPositions.Clear();
             parkArrivals.Clear();
             loopMoves.Clear();
@@ -1259,7 +1278,7 @@ namespace LoopPark
 
         void CheckStuck(float dt)
         {
-            if (Ended) { stuckTimer = 0; return; }
+            if (Ended || clearing == null) { stuckTimer = 0; return; }
             bool busy = transit > 0 || queued.Count > 0;
             foreach (var c in allCars)
             {
@@ -1274,6 +1293,9 @@ namespace LoopPark
             if (busy) { stuckTimer = 0; return; }
 
             bool anyTarget = false;
+            // 关卡搭建是同步的，中途异常会让 lanes/loopCars 停留在 null；这里直接返回，
+            // 避免每帧 NRE 刷屏把真正的错误埋在日志里（2026-11-24 被这个掩盖过一轮）。
+            if (lanes == null || loopCars == null) { stuckTimer = 0; return; }
             foreach (var c in loopCars) if (AnyTargetFor(c.color)) { anyTarget = true; break; }
 
             bool canTap = false;
@@ -1651,6 +1673,11 @@ namespace LoopPark
         {
             garageAnyColor[j] = color < 0;
             garageColorOf[j] = color >= 0 ? color : -1;
+
+            // 配了 3D 外壳就优先用它；没配（或预制体缺组件）时保持原 2D 卷帘门，便于随时回退。
+            var prefab = SkinConfig.Instance != null ? SkinConfig.Instance.containerPrefab : null;
+            if (prefab != null && BuildGarage3D(j, color, prefab)) return;
+
             float h = ColumnHeight + 0.12f * cell;
             var go = ShapeMesh.RoundedRect("Garage" + j, root, new Vector2(colX[j], colBottomY + ColumnHeight / 2),
                 new Vector2(cell / 2 + 0.03f * cell, h / 2), 0.14f * cell, new Color(0.30f, 0.32f, 0.40f), 35);
@@ -1685,6 +1712,48 @@ namespace LoopPark
             foreach (var car in cols[j]) car.gameObject.SetActive(false);
         }
 
+        /// <summary>
+        /// 3D 集装箱：靠真实 Z 遮挡列内车辆，所以车辆保持激活（被帘子盖住的列仍隐藏），
+        /// 顶盖上移并按容器顶边裁切后，车由下往上逐辆露出。
+        /// 返回 false 表示预制体缺 ContainerView，调用方回退到 2D 占位。
+        /// </summary>
+        bool BuildGarage3D(int j, int color, GameObject prefab)
+        {
+            var go = Instantiate(prefab, root, false);
+            go.name = "Container3D_" + j;
+            go.transform.localPosition = new Vector3(colX[j], colBottomY + ColumnHeight * 0.5f, 0f);
+
+            var view = go.GetComponent<ContainerView>();
+            if (view == null)
+            {
+                Debug.LogError("[LoopPark] containerPrefab 上没有 ContainerView，回退 2D 集装箱", prefab);
+                Destroy(go);
+                return false;
+            }
+
+            // 列内车辆的排序带：车身按 CarLayerDepth 公式，问号徽章挂在 visual 的 -2.2*carW 上，
+            // 比车身更靠前；两者都要进 front，否则徽章会浮在集装箱外面。
+            float front = float.MaxValue, back = float.MinValue;
+            foreach (var car in cols[j])
+            {
+                float carDepth = CarLayerDepth.ComputeDepth(car.transform.position.y, 20);
+                front = Mathf.Min(front, carDepth, -2.2f * carW);
+                back = Mathf.Max(back, carDepth);
+            }
+            // 空列兜底：用列底位置的车辆深度，保证整壳仍落在合理的排序带里
+            if (front > back)
+            {
+                front = back = CarLayerDepth.ComputeDepth(colBottomY, 20);
+            }
+
+            view.Setup(cell, ColumnHeight, cell, front, back, color);
+            garageGo[j] = go;
+
+            bool hiddenByCurtain = curtainLeft[j] > 0;
+            foreach (var car in cols[j]) car.gameObject.SetActive(!hiddenByCurtain);
+            return true;
+        }
+
         void GarageProgress(int color)
         {
             for (int j = 0; j < cols.Length; j++)
@@ -1700,7 +1769,14 @@ namespace LoopPark
                 Emit("garageopen", null);
                 if (Verbose) Debug.Log($"[LoopPark] garage open col{j} color{color}");
                 stuckTimer = 0;
-                if (go != null) StartCoroutine(RollUp(go, j));
+                if (go != null)
+                {
+                    // 3D 外壳自己播三段式开箱动画并在结束时销毁；2D 占位仍走原来的缩放协程。
+                    if (go.TryGetComponent<ContainerView>(out var containerView))
+                        containerView.PlayOpen();
+                    else
+                        StartCoroutine(RollUp(go, j));
+                }
             }
         }
 

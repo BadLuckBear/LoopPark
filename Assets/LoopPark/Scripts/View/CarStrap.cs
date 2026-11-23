@@ -3,36 +3,54 @@ using UnityEngine;
 namespace LoopPark
 {
     /// <summary>
-    /// 绑带车车顶附件（吸盘 + 软管）。
+    /// 绑带车车顶附件：美术吸盘 + 美术 L 形弯头 + 程序化直套管。
     ///
-    /// 数据流（唯一写入者是 CarSkin3D / CarView，本组件不查询场景、不持有共享状态）：
-    ///   CarView 完成绑带配对 → SetLinked(true)
+    /// 最终形态（2026-11-24 定稿，几何依据见 StrapArt 的注释与实测数据）：
+    ///   吸盘 xipan 贴死在车顶不动；L 形弯头 shengzi 的竖脚插在吸盘孔里，
+    ///   只绕该竖脚轴线水平旋转，把 90° 的弯折当成「万向弯头」，让直口指向搭档车；
+    ///   两车直口之间由程序化直套管补上，一头套进直口、一头钉在双方直口的中点。
+    ///
+    /// 为什么不再旋转/拉伸美术弯头：L 形件两个管口方向固定相差 90°，
+    /// 「管口垂直插进吸盘」与「两端连线指向对方」互斥，靠调参永远对不上；
+    /// 拆成「弯头只转方向 + 套管负责距离」之后，两个约束各自满足，且各占一次单一职责。
+    ///
+    /// 数据流（唯一写入者是 CarView / CarSkin3D，本组件不查询场景、不持有共享状态）：
+    ///   CarView 配对完成 → SetLinked(true, partnerStrap)
     ///   CarSkin3D 收到车漆色与遮盖状态 → SetPaint / SetCovered
     /// 显示条件 = 属于一对绑带车，且没有被问号车布料盖住。
     ///
-    /// 姿态规则：吸盘永远不动（贴死在车顶、盘面保持水平），只有软管绕自己的根部
-    /// 旋转并沿轴向拉伸去够搭档车。早期版本旋转整个附件节点，吸盘会跟着歪掉、
-    /// 并被绕车身中心甩到车顶边缘 —— 一根一体化的刚体做不出“吸盘贴车顶 + 软管转向”。
-    ///
-    /// 颜色写进 MaterialPropertyBlock 而不是共享材质，避免一辆车上色串到同材质的所有车；
-    /// 读取属性块时不清空，保留 CarLayerDepth 每帧写入的 _CarDepth（车辆跨网格排序必需）。
+    /// 颜色写进 MaterialPropertyBlock（Strap.mat 被所有车共用，直接改材质会串色）；
+    /// 读属性块时不清空，保留 CarLayerDepth 每帧写入的 _CarDepth。
     /// </summary>
-    [DefaultExecutionOrder(100)] // 排在 CarLayerDepth（默认 0）之后，颜色补写在整车深度刷新之后
-    // 备注：只在吸盘处转动软管节点，不动整个附件，避免吸盘歪掉或漂到车顶边缘。
+    [DefaultExecutionOrder(100)]   // 排在 CarLayerDepth（默认 0）之后：颜色与深度都落笔在它后面
     public sealed class CarStrap : MonoBehaviour
     {
         [Tooltip("附件渲染器；留空时在 Awake 自动收集子渲染器。")]
         [SerializeField] Renderer[] renderers;
-        [Tooltip("相对车身整车的深度偏置；负数把它压到车顶之上，取值需小于相邻车的深度间隔。")]
+        [Tooltip("相对车身整车的深度偏置；负数压到车顶之上，取值需小于相邻车的深度间隔。")]
         [SerializeField] float depthBias = -0.06f;
-        [Tooltip("软管在模型局部空间的朝向；shengzi.fbx 的软管沿 -Z 伸出，配对后指向搭档车。")]
-        [SerializeField] Vector3 hoseAxisLocal = new Vector3(0f, 0f, -1f);
-        [Tooltip("软管最大拉伸倍数；超过后不再加长，避免远距离时拉成细面。")]
-        [SerializeField] float maxHoseStretch = 8f;
-        [Tooltip("软管最小收缩倍数：近距离配对时要能把钩形缩短，否则够不到两车中点。")]
-        [SerializeField] float minHoseStretch = 0.2f;
-        [Tooltip("软管竖直方向的压扁比例：把模型自带的弯弧压低，拉长后更像贴车顶的绑带而不是拱门。")]
-        [Range(0.05f, 1f)][SerializeField] float hoseFlatten = 0.35f;
+        [Tooltip("弯头整体缩放：相邻两车过近、直口伸过两车中点时调小（0.7~1）。")]
+        [Range(0.2f, 1.5f)][SerializeField] float elbowScale = 1f;
+        [Tooltip("套管半径相对美术直口口径的比例。大于 1 = 套管像卡箍一样套在管口外侧；等于或小于 1 斜看会从单面壳管口透出背景。")]
+        [Range(0.6f, 1.3f)][SerializeField] float hoseRadiusScale = 1f;
+        [Tooltip("套管起点往直口内探进的深度，按口径的倍数计。保持 0：探进去会和美术管身重叠成 z-fighting（实测会在接缝处露出缺口）。")]
+        [Range(0f, 6f)][SerializeField] float socketInset = 0f;
+        [Tooltip("绑带色对车漆色的提亮量（朝白色插值）。默认 0 = 与车漆完全同色（弯头与车身一致）。" +
+                 "只有在极暗车漆下觉得管子完全看不出受光时才调，例如 0.15。")]
+        [Range(0f, 0.6f)][SerializeField] float hoseLift = 0f;
+        [Tooltip("绑带调色资产（可空）。非空时它覆盖这里的颜色与材质观感 —— " +
+                 "运行中用 LoopPark/绑带/实时调色 窗口改，改完保存，下次启动继续生效。")]
+        [SerializeField] StrapTuningConfig tuning;
+
+        [Header("发车扯断")]
+        [Tooltip("拉长到原长的多少倍就立刻啪地扯断（推荐 1.15 ~ 1.25）。")]
+        [SerializeField] float breakMaxStretch = 1.2f;
+        [Tooltip("拉伸阶段最长持续时间（秒）。车开得慢时按时间兜底，保证一定断得掉。")]
+        [SerializeField] float breakMaxSeconds = 0.14f;
+        [Tooltip("扯断后，断管缩回直口的时间（秒）。")]
+        [SerializeField] float retractSeconds = 0.10f;
+        [Tooltip("扯断后，吸盘与弯头平滑缩小消失的时间（秒）。")]
+        [SerializeField] float fadeOutSeconds = 0.22f;
 
         static readonly int ColorId = Shader.PropertyToID("_Color");
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -40,93 +58,155 @@ namespace LoopPark
         static readonly int SpecularId = Shader.PropertyToID("_SpecColor");
 
         int[] materialCounts;
-        MaterialPropertyBlock block;
+        readonly StrapPaint paint = new StrapPaint();   // 上色单独成类：状态/姿态与颜色是两件事
         CarLayerDepth layerDepth;
-        // 搭档的 CarStrap：双方都用对方的软管节点算中点，两边的中点才会是同一个点。
+        StrapArt art;
+        StrapSleeve sleeve;
+
+        // 搭档的 CarStrap：双方各自瞄准对方的吸盘轴线，套管终点取双方直口中点，
+        // 两个中点由同一公式算出，必然重合。
         CarStrap partner;
-        // 软管节点（模型里最长的那个网格）与它的原始长度/姿态，配对时只改这一段。
-        Transform hose;
-        float hoseTipLength;
-        float hoseBaseScaleY = 1f;
-        float hoseBaseScaleZ = 1f;
-        Quaternion hoseBaseRotation = Quaternion.identity;
-        Quaternion axisFix = Quaternion.identity;
+        string hoseId;   // 关卡搭建时写入的唯一编号（见 SetHoseId），逐根调色的钥匙
+        string hoseKey;  // 兜底标识（没写 hoseId 时用配对编号）
+        bool built;      // 一次性装配已完成（节点默认 inactive，Awake 可能晚于 SetLinked）
         bool linked;    // 这辆车属于一对绑带
         bool covered;   // 问号车布料盖住了车身
-        Color paint = Color.white;
-        float smoothness = 0.18f;
-        float specular = 0.08f;
 
-        /// <summary>绑带附件当前是否可见；供编辑器检查工具读取。</summary>
-        public bool IsVisible => linked && !covered;
+        // ── 发车扯断演出（2026-11-24 加入）────────────────────────────────────────
+        // 三段式：None（正常连接）→ Stretching（拉长一点点、变细、轻颤）
+        //        → Fading（断管缩回直口，吸盘与弯头整体缩小消失）→ None。
+        // 只有「第一辆车发车」会触发：GameController.Dispatch 对双方各调一次 SetLinked(false)，
+        // 两边用同一基准距离与同一断口坐标，因此阈值与演出必然同步。
+        /// <summary>扯断演出的阶段。</summary>
+        enum BreakState { None, Stretching, Fading }
 
-        /// <summary>软管节点（旋转与拉伸的唯一对象）；供编辑器预览工具读取。</summary>
-        public Transform Hose => hose;
+        BreakState breakState;
+        CarStrap breakPartner;       // 断开的另一半；队友车可能先被回收，一律用 == null 判活
+        float breakTimer;            // 当前阶段已用时（秒）
+        float breakBaseDist = 0.1f;  // 开始拉伸那一刻双方吸盘的间距，作为拉伸倍率的基准
+        Vector3 snapWorld;           // 「啪」那一下的断口世界坐标：两个断管都朝它缩回
+        Vector3 baseLocalScale = Vector3.one;  // 附件节点原始缩放；淡出时按它乘系数
+
+        /// <summary>绑带附件当前是否可见：属于一对绑带，或正在播发车扯断演出；问号车被盖住时一律不可见。</summary>
+        public bool IsVisible => (linked || breakState != BreakState.None) && !covered;
+
+        /// <summary>套管节点；供诊断/编辑器工具读取。</summary>
+        public Transform Hose => sleeve != null ? sleeve.Renderer.transform : null;
+
+        /// <summary>本车吸盘孔的世界坐标；供诊断与将来的断开演出读取。</summary>
+        public Vector3 SocketWorldPosition => art != null && art.Ready ? art.SocketWorld : transform.position;
+
+        /// <summary>直口中心的世界坐标（套管起点按这个点再缩进）；供诊断工具读取。</summary>
+        public Vector3 MuzzleWorldPosition => art != null && art.Ready ? art.MuzzleWorld : transform.position;
+
+        /// <summary>直口此刻的口径（世界半径，已含父级非均匀缩放的影响）；供编辑器工具读取。</summary>
+        public float MouthRadiusWorld => art != null && art.Ready ? art.MouthRadiusWorld : 0f;
 
         void Awake()
         {
-            axisFix = Quaternion.FromToRotation(Vector3.back, hoseAxisLocal.normalized);
-            Collect();
+            Build();
             Apply();
+        }
+
+        /// <summary>
+        /// 一次性装配：收集渲染器、量件转身器、程序化套管、深度注册。
+        /// 节点在预制体里默认 inactive，因此 SetLinked 可能先于 Awake 到来，这里要能重入。
+        /// </summary>
+        void Build()
+        {
+            if (built) return;
+            built = true;
+            baseLocalScale = transform.localScale;   // 记下原始缩放：淡出阶段按它乘系数，结束时原样还原
+            Collect();
+            art = new StrapArt(transform, renderers) { Scale = elbowScale };
+            art.Setup();
+            RegisterDepth();
+        }
+
+        /// <summary>
+        /// 套管按需创建：只有真正配对（要画连接）的车才建。
+        /// 顺手把「每辆车都在 Awake 建一根」改成懒创建 —— 否则整关几百辆车会各留一根空套管对象，
+        /// Hierarchy 里堆成一片，纯浪费（它们是场景根对象，不跟着车身层级走）。
+        /// </summary>
+        StrapSleeve EnsureSleeve()
+        {
+            if (sleeve != null) return sleeve;
+            // 套管材质直接派生自美术绑带正在用的材质（Strap.mat）：颜色/贴图/光滑度与美术件完全同源，
+            // 只有 shader 换成双面版（开壳必需）。找不到材质时 StrapSleeve 自己会退回 Layered Hose 默认材质。
+            Material source = null;
+            if (renderers != null)
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    if (renderers[i] == null) continue;
+                    source = renderers[i].sharedMaterial;
+                    if (source != null) break;
+                }
+            sleeve = new StrapSleeve("StrapSleeve", source);
+            RegisterDepth();   // 新渲染器要补注册进本车的深度列表（Register 自身幂等）
+            return sleeve;
         }
 
         void Collect()
         {
-            if (renderers != null && renderers.Length > 0 && materialCounts != null) return;
             if (renderers == null || renderers.Length == 0) renderers = GetComponentsInChildren<Renderer>(true);
             materialCounts = new int[renderers.Length];
             for (int i = 0; i < renderers.Length; i++)
                 materialCounts[i] = renderers[i] != null ? renderers[i].sharedMaterials.Length : 0;
-            FindHose();
         }
 
         /// <summary>
-        /// 识别软管节点：模型里沿局部 z 最长的网格（吸盘短而宽）。只动这一段，
-        /// 吸盘保持原尺寸与原姿态；记录原始长度/姿态，用来按两车距离换算拉伸倍数。
-        /// </summary>
-        void FindHose()
-        {
-            float longest = 0f;
-            foreach (var renderer in renderers)
-            {
-                var filter = renderer != null ? renderer.GetComponent<MeshFilter>() : null;
-                if (filter == null || filter.sharedMesh == null) continue;
-                var bounds = filter.sharedMesh.bounds;
-                if (bounds.size.z <= longest) continue;
-                longest = bounds.size.z;
-                hose = renderer.transform;
-                // 软管沿 -z 伸出：末端到节点原点的距离（网格局部单位）。节点原点就在吸盘处，
-                // 所以绕它旋转时软管根部不动，只有末端扫过车顶。
-                hoseTipLength = Mathf.Max(0.0001f, -bounds.min.z);
-            }
-            if (hose != null)
-            {
-                hoseBaseScaleY = hose.localScale.y;
-                hoseBaseScaleZ = hose.localScale.z;
-                hoseBaseRotation = hose.localRotation;
-            }
-        }
-
-        /// <summary>
-        /// 向同一辆车的 CarLayerDepth 注册附件网格：车辆 Shader 会把世界 z 压缩到 _CarDepth 附近，
-        /// 吸盘与车顶的自然深度差小于像素精度，必须靠偏置显式压到车顶之上。
+        /// 向同一辆车的 CarLayerDepth 注册网格：车辆 Shader 会把世界 z 压缩到 _CarDepth 附近，
+        /// 附件与车顶的真实深度差小于像素精度，必须靠偏置显式压到车顶之上。
+        /// 套管是横跨两车的细长件，注册时要求抑制描边，否则描边 pass 会把端部径向撑成黑环。
         /// </summary>
         void RegisterDepth()
         {
             layerDepth ??= GetComponentInParent<CarLayerDepth>();
-            if (layerDepth == null || renderers == null) return;
+            if (layerDepth == null) return;
             foreach (var renderer in renderers)
                 if (renderer != null) layerDepth.Register(renderer, depthBias);
+            if (sleeve != null) layerDepth.Register(sleeve.Renderer, depthBias, true);
         }
 
-        /// <summary>绑带配对开关：只有成对车辆才显示车顶吸盘，并把软管朝向搭档车。</summary>
+        /// <summary>
+        /// 绑带配对开关：只有成对车辆才显示车顶附件，弯头与套管都朝向搭档。
+        /// 关闭时若此前确实连着，就进入扯断演出（而不是整根直接消失）：
+        /// 记录搭档与此刻的吸盘间距作基准，交给 RefreshStrap 的 Stretching 阶段逐步拉长。
+        /// </summary>
         public void SetLinked(bool on, CarStrap target)
         {
+            Build();
+            if (!on && linked && breakState == BreakState.None && target != null)
+            {
+                breakPartner = target;
+                breakBaseDist = Mathf.Max(0.02f, Vector3.Distance(SocketWorldPosition, target.SocketWorldPosition));
+                breakTimer = 0f;
+                breakState = BreakState.Stretching;
+            }
+            else if (on)
+            {
+                breakState = BreakState.None;   // 重新配对 / 复用：清掉上一次的演出残留
+                breakPartner = null;
+                transform.localScale = baseLocalScale;
+            }
+
             partner = on ? target : null;
             linked = on;
-            // 立即对齐一次：LateUpdate 每帧也会跟，但配对当帧（以及编辑器静态渲染）就要是正确姿态。
             Apply();
-            ApplyAim();
+            RefreshStrap();
+            if (on && target != null) target.RefreshStrap();
+        }
+
+        /// <summary>
+        /// 从拉伸切到收尾。由先达到阈值的一方调用，并顺手把同一断口坐标推给搭档，
+        /// 保证两根断管从同一点缩回；重复调用（另一方晚一帧到阈值）直接忽略。
+        /// </summary>
+        void EnterFading(Vector3 snapPoint)
+        {
+            if (breakState != BreakState.Stretching) return;
+            breakState = BreakState.Fading;
+            snapWorld = snapPoint;
+            breakTimer = 0f;
         }
 
         /// <summary>问号车遮盖状态：被布料盖住时同步隐藏，避免从布缝里露出车顶附件。</summary>
@@ -137,102 +217,221 @@ namespace LoopPark
             Apply();
         }
 
-        /// <summary>跟随车漆上色；光滑度与高光沿用该颜色编号的外观配置。</summary>
+        /// <summary>跟随车漆上色；光滑度与高光沿用该颜色编号的外观配置。
+        /// 绑带不是车漆本体：朝白色提 hoseLift（美术弯头与套管用同一个提亮后颜色，接缝不会出现明暗台阶）。</summary>
         public void SetPaint(Color color, float carSmoothness, float carSpecular)
         {
-            paint = color;
-            smoothness = carSmoothness;
-            specular = carSpecular;
+            paint.Set(color, carSmoothness, carSpecular, hoseLift);
             Apply();
         }
 
         void Apply()
         {
-            Collect();
-            RegisterDepth();
+            Build();
             bool visible = IsVisible;
-            // 用节点开关而不是 Renderer.enabled：CarLayerDepth 会持续给本节点写深度，
-            // 节点关闭后不再提交 Draw Call，同时保留属性块内容供再次显示时复用。
+            // 用节点开关而不是 Renderer.enabled：节点关闭后不再提交 Draw Call，
+            // 属性块内容保留，再次显示时直接复用。
             if (gameObject.activeSelf != visible) gameObject.SetActive(visible);
+            if (!visible) sleeve?.Hide();  // 节点被关掉时 LateUpdate 不再跑，套管必须在这里收
             if (visible) ApplyColors();
         }
 
-        // CarLayerDepth 每帧都会重写整车属性块；这里在它之后补写颜色，保证两者共存。
-        // 同时按搭档位置转动软管：两辆车的软管相向伸出，才能对接成一条绑带。
-        void LateUpdate()
-        {
-            ApplyColors();
-            ApplyAim();
-        }
+        // CarLayerDepth 每帧都会重写整车属性块，这里在它之后补写颜色，两者才能共存。
+        // 颜色补写放在 RefreshStrap 内部（Show 之后）：套管是 Show 那一刻才存在的渲染器，
+        // 先写颜色会漏掉它，而编辑模式下没有 LateUpdate 帮忙补。
+        void LateUpdate() => RefreshStrap();
 
         /// <summary>
-        /// 只转动软管节点：吸盘固定在车顶不动，软管绕自身根部（吸盘处）转向搭档，
-        /// 每根伸到两车中点，两根头对头接上。车辆移动时每帧重算。
+        /// 每帧姿态。三个分支各自单一职责：
+        ///   正常连接 —— 弯头水平指向搭档的吸盘轴线 → 取双方直口中点 → 重画套管；
+        ///   拉伸     —— 车刚发车把距离拉开，套管按倍率变细并轻颤，到阈值立刻同步扯断；
+        ///   收尾     —— 断管缩回自己直口，整根附件（吸盘 + 弯头）按原缩放平滑缩到 0。
+        /// 全部在世界空间算位置，父级的非均匀缩放不会进入公式。
         /// </summary>
-        void ApplyAim()
+        void RefreshStrap()
         {
-            if (hose == null) return;
+            if (!built) return;
+            // 演出用真实帧时间；编辑器里 deltaTime 可能为 0（失焦/暂停），退回 unscaled 保证还推进。
+            float dt = Time.deltaTime > 0f ? Time.deltaTime : Time.unscaledDeltaTime;
 
-            if (partner == null || !linked)
+            // 阶段 1：第一辆车刚发车，拉长一点点、变细、轻颤 -> 达到阈值双方同步扯断
+            if (breakState == BreakState.Stretching)
             {
-                // 取消绑带：软管回到预制体原始姿态。
-                hose.localRotation = hoseBaseRotation;
-                SetHoseStretch(hoseBaseScaleZ, hoseBaseScaleY);
+                if (covered || art == null || !art.Ready || breakPartner == null || breakPartner.art == null || !breakPartner.art.Ready)
+                {
+                    FinishBreak();
+                    return;
+                }
+
+                art.AimAt(breakPartner.SocketWorldPosition);
+                Vector3 mine = art.MuzzleWorld;
+                Vector3 theirs = breakPartner.art.MuzzleWorld;
+                Vector3 mid = (mine + theirs) * 0.5f;
+
+                float dist = Vector3.Distance(SocketWorldPosition, breakPartner.SocketWorldPosition);
+                float ratio = dist / Mathf.Max(0.01f, breakBaseDist);
+                breakTimer += dt;
+
+                if (ratio >= breakMaxStretch || breakTimer >= breakMaxSeconds)
+                {
+                    EnterFading(mid);                    // 断口定在双方中点，两边从同一点缩回
+                    breakPartner.EnterFading(mid);
+                    return;
+                }
+
+                Vector3 span = mid - mine;
+                if (span.sqrMagnitude > 1e-8f)
+                {
+                    float baseRadius = Mathf.Max(1e-4f, art.MouthRadiusWorld * hoseRadiusScale);
+                    float thinRadius = baseRadius / Mathf.Sqrt(Mathf.Max(1f, ratio));   // 拉得越长越细，像橡皮筋
+                    Vector3 dir = span.normalized;
+                    Vector3 perp = Vector3.Cross(dir, Vector3.forward);
+                    if (perp.sqrMagnitude < 1e-4f) perp = Vector3.Cross(dir, Vector3.up);
+                    float tension = Mathf.Clamp01((ratio - 1f) / Mathf.Max(0.05f, breakMaxStretch - 1f));
+                    Vector3 jitter = perp.normalized * (Mathf.Sin(Time.time * 75f) * (0.008f + 0.016f * tension));
+
+                    Vector3 start = mine - dir * (thinRadius * socketInset);
+                    EnsureSleeve().Show(start, mid + jitter, thinRadius);
+                }
+                ApplyColors();
                 return;
             }
 
-            var anchor = hose.parent;   // 软管的父节点，用它的旋转把世界朝向换算成局部朝向
-            if (anchor == null) return;
+            // 阶段 2：已扯断 -> 断管迅速缩回直口，吸盘和弯头平滑缩小消失
+            if (breakState == BreakState.Fading)
+            {
+                if (covered || art == null || !art.Ready)
+                {
+                    FinishBreak();
+                    return;
+                }
 
-            // 中点取“两根软管起点”的中点：两边算出的点是同一个，而且各自到它等距，
-            // 两根软管才会各伸一半、在中点头对头接上（用车身中心算会因为吸盘偏移而一长一短）。
-            Vector3 partnerPoint = partner.hose != null ? partner.hose.position : partner.transform.position;
-            Vector3 midPoint = (hose.position + partnerPoint) * 0.5f;
-            Vector3 toMid = midPoint - hose.position;
-            float target = toMid.magnitude;
-            if (target < 1e-4f) return;
+                breakTimer += dt;
+                art.AimAt(snapWorld);
+                Vector3 mine = art.MuzzleWorld;
 
-            // 只用 localRotation：车身父级是非均匀缩放（1.55/1.3/1.3），直接写世界 rotation
-            // 会让 Unity 反算局部矩阵时带上 shear，朝向和位置都会歪。
-            Vector3 up = transform.parent != null ? transform.parent.up : Vector3.up;
-            Quaternion worldRot = Quaternion.LookRotation(-toMid.normalized, up) * axisFix;
-            hose.localRotation = Quaternion.Inverse(anchor.rotation) * worldRot;
+                float rk = Mathf.Clamp01(breakTimer / Mathf.Max(0.01f, retractSeconds));
+                if (rk < 1f)
+                {
+                    float ease = 1f - Mathf.Pow(1f - rk, 3f);   // 先快后慢：像被弹回弯头里
+                    Vector3 tip = Vector3.Lerp(snapWorld, mine, ease);
+                    float baseRadius = Mathf.Max(1e-4f, art.MouthRadiusWorld * hoseRadiusScale);
+                    float r = baseRadius * Mathf.Lerp(0.75f, 0.1f, ease);
+                    EnsureSleeve().Show(mine, tip, r);
+                }
+                else
+                {
+                    sleeve?.Hide();
+                }
 
-            // 拉伸：软管局部 z 就是它的长度方向，按“到中点距离 / 当前长度”换算，
-            // 同时把竖直弯弧压扁，让软管贴着车顶伸过去而不是拱成一道门。
-            Vector3 tip = hose.TransformPoint(new Vector3(0f, 0f, -hoseTipLength));
-            float current = Vector3.Distance(hose.position, tip);
-            if (current < 1e-4f) return;
-            float stretch = Mathf.Clamp(hose.localScale.z * (target / current),
-                hoseBaseScaleZ * minHoseStretch, hoseBaseScaleZ * maxHoseStretch);
-            SetHoseStretch(stretch, hoseBaseScaleY * hoseFlatten);
+                // 附件节点整体缩小：吸盘与弯头一起退场，不需要逐个改 Renderer.enabled
+                float fk = Mathf.Clamp01(breakTimer / Mathf.Max(0.01f, fadeOutSeconds));
+                float scaleFactor = 1f - Mathf.SmoothStep(0f, 1f, fk);
+                transform.localScale = baseLocalScale * scaleFactor;
+
+                if (fk >= 1f)
+                {
+                    FinishBreak();
+                    return;
+                }
+
+                ApplyColors();
+                return;
+            }
+
+            // 阶段 0：正常连接
+            bool usable = linked && !covered && partner != null && art != null && art.Ready && partner.art != null && partner.art.Ready;
+            if (!usable) { sleeve?.Hide(); ApplyColors(); return; }
+
+            art.AimAt(partner.SocketWorldPosition);
+            Vector3 myMuzzle = art.MuzzleWorld;
+            Vector3 theirMuzzle = partner.art.MuzzleWorld;
+            Vector3 center = (myMuzzle + theirMuzzle) * 0.5f;
+            Vector3 normalSpan = center - myMuzzle;
+            if (normalSpan.sqrMagnitude < 1e-8f) { sleeve?.Hide(); return; }
+
+            float radius = Mathf.Max(1e-4f, art.MouthRadiusWorld * hoseRadiusScale);
+            Vector3 normalStart = myMuzzle - normalSpan.normalized * (radius * socketInset);
+            EnsureSleeve().Show(normalStart, center, radius);
+            ApplyColors();
         }
 
-        void SetHoseStretch(float scaleZ, float scaleY)
+        /// <summary>
+        /// 演出收尾：清状态、还原缩放、收起套管，最后由 Apply 按 IsVisible 把节点关掉（不再提交 Draw Call）。
+        /// </summary>
+        void FinishBreak()
         {
-            var scale = hose.localScale;
-            if (Mathf.Approximately(scale.z, scaleZ) && Mathf.Approximately(scale.y, scaleY)) return;
-            hose.localScale = new Vector3(scale.x, scaleY, scaleZ);
+            breakState = BreakState.None;
+            breakPartner = null;
+            transform.localScale = baseLocalScale;
+            sleeve?.Hide();
+            Apply();
         }
 
+        void OnDisable()
+        {
+            // 车停用/回收时先收起套管；演出被打断也要还原缩放，避免下次复用还是一根缩小的残件。
+            if (sleeve != null) sleeve.Hide();
+            if (built) transform.localScale = baseLocalScale;
+        }
+
+        void OnEnable()
+        {
+            if (!built) return;
+            Apply();
+            RefreshStrap();
+        }
+
+        /// <summary>这一根生成套管的唯一编号（由关卡搭建时按「车道_车道内序号」写入，
+        /// 同一关重跑不变）。调色资产就是按它逐根存颜色，所以每根可以不一样。</summary>
+        public void SetHoseId(string id) => hoseId = id;
+
+        /// <summary>逐根调色的钥匙；未写入时退回配对编号（只用于兜底显示，不用于资产命中）。</summary>
+        public string HoseKey
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(hoseId)) return hoseId;
+                if (!string.IsNullOrEmpty(hoseKey)) return hoseKey;
+                var view = GetComponentInParent<CarView>();
+                hoseKey = view != null && view.link > 0 ? "link" + view.link : "unlinked";
+                return hoseKey;
+            }
+        }
+
+        /// <summary>车漆上色：颜色优先级 = 单根覆盖 → 全局规则（调色资产）→ 本车车漆色。
+        /// 每帧都读资产，所以 Play 中改完立刻见效，不需要重启或重新生成任何东西。</summary>
         void ApplyColors()
         {
-            if (!IsVisible || renderers == null || materialCounts == null) return;
-            block ??= new MaterialPropertyBlock();
-            for (int i = 0; i < renderers.Length; i++)
+            if (!IsVisible) return;
+            var sleeveRenderer = sleeve != null && sleeve.Visible ? sleeve.Renderer : null;
+            if (tuning == null)
             {
-                var renderer = renderers[i];
-                if (renderer == null) continue;
-                for (int slot = 0; slot < materialCounts[i]; slot++)
-                {
-                    renderer.GetPropertyBlock(block, slot);
-                    block.SetColor(ColorId, paint);
-                    block.SetColor(BaseColorId, paint);
-                    block.SetFloat(SmoothnessId, smoothness);
-                    block.SetColor(SpecularId, Color.white * specular);
-                    renderer.SetPropertyBlock(block, slot);
-                }
+                paint.Apply(renderers, materialCounts, sleeveRenderer);
+                return;
             }
+
+            Color strapColor;
+            if (tuning.TryGetHoseColor(HoseKey, out Color hoseOverride))
+            {
+                // 单根指定色：整根管（两半）都用它
+                strapColor = hoseOverride;
+            }
+            else
+            {
+                strapColor = tuning.useCarPaint ? paint.Display : tuning.hoseColor;
+            }
+            Color artColor = tuning.affectsArt ? strapColor : paint.Display;
+            paint.Apply(renderers, materialCounts, sleeveRenderer, artColor, strapColor,
+                        tuning.smoothness, tuning.specular);
+        }
+
+        void OnDestroy()
+        {
+            sleeve?.Dispose();   // 套管挂在场景根，不随车身销毁，必须自己回收
         }
     }
 }
+
+
+
