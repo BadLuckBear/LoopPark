@@ -320,7 +320,7 @@ namespace LoopPark
             laneFrontY = H - 2 * H * (1855f / UIKit.DesignSize.y);
             laneStep = cell * QueuedRowSpacing * DepartureSpacing;
             parkingStep = cell * QueuedRowSpacing * ParkingSpacing;
-            laneMinY = -H + 2 * H * (300f / UIKit.DesignSize.y);
+            laneMinY = -H - laneStep;
         }
 
         // 车位位置、围栏和机关共用整列高度，扩大行距后仍与车列对齐。
