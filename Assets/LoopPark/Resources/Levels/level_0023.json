@@ -2,7 +2,7 @@
   "id": 23,
   "difficulty": 0,
   "capacity": 6,
-  "slotCapacity": 7,
+  "slotCapacity": 6,
   "loopLimit": 5,
   "columns": [
     {
@@ -21,8 +21,15 @@
       "levels": [],
       "cars": [
         {
-          "c": 1,
+          "c": 7,
           "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 7,
+          "h": true,
           "l": 0,
           "k": false,
           "lk": false
@@ -49,14 +56,7 @@
           "lk": false
         },
         {
-          "c": 7,
-          "h": true,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 7,
+          "c": 1,
           "h": false,
           "l": 0,
           "k": false,
@@ -80,21 +80,14 @@
       "levels": [],
       "cars": [
         {
-          "c": 9,
+          "c": 1,
           "h": false,
           "l": 0,
           "k": false,
           "lk": false
         },
         {
-          "c": 4,
-          "h": true,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 7,
+          "c": 10,
           "h": true,
           "l": 0,
           "k": false,
@@ -108,104 +101,7 @@
           "lk": false
         },
         {
-          "c": 10,
-          "h": true,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 1,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        }
-      ]
-    },
-    {
-      "fence": false,
-      "lockAfterClear": false,
-      "container": false,
-      "containerColor": -1,
-      "lockColor": -1,
-      "cv": 0,
-      "cc": 0,
-      "colored": false,
-      "lcol": -1,
-      "garage": false,
-      "gcol": 0,
-      "ice": 0,
-      "levels": [],
-      "cars": [
-        {
           "c": 7,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 10,
-          "h": true,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 14,
-          "h": true,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 7,
-          "h": true,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 14,
-          "h": true,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 1,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        }
-      ]
-    },
-    {
-      "fence": false,
-      "lockAfterClear": false,
-      "container": false,
-      "containerColor": -1,
-      "lockColor": -1,
-      "cv": 0,
-      "cc": 0,
-      "colored": false,
-      "lcol": -1,
-      "garage": false,
-      "gcol": 0,
-      "ice": 0,
-      "levels": [],
-      "cars": [
-        {
-          "c": 14,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 1,
           "h": true,
           "l": 0,
           "k": false,
@@ -219,21 +115,7 @@
           "lk": false
         },
         {
-          "c": 0,
-          "h": true,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 14,
-          "h": true,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 1,
+          "c": 9,
           "h": false,
           "l": 0,
           "k": false,
@@ -257,8 +139,29 @@
       "levels": [],
       "cars": [
         {
-          "c": 0,
+          "c": 1,
           "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 14,
+          "h": true,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 7,
+          "h": true,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 14,
+          "h": true,
           "l": 0,
           "k": false,
           "lk": false
@@ -271,6 +174,44 @@
           "lk": false
         },
         {
+          "c": 7,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        }
+      ]
+    },
+    {
+      "fence": false,
+      "lockAfterClear": false,
+      "container": false,
+      "containerColor": -1,
+      "lockColor": -1,
+      "cv": 0,
+      "cc": 0,
+      "colored": false,
+      "lcol": -1,
+      "garage": false,
+      "gcol": 0,
+      "ice": 0,
+      "levels": [],
+      "cars": [
+        {
+          "c": 1,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 14,
+          "h": true,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
           "c": 0,
           "h": true,
           "l": 0,
@@ -278,7 +219,7 @@
           "lk": false
         },
         {
-          "c": 9,
+          "c": 4,
           "h": true,
           "l": 0,
           "k": false,
@@ -292,7 +233,66 @@
           "lk": false
         },
         {
+          "c": 14,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        }
+      ]
+    },
+    {
+      "fence": false,
+      "lockAfterClear": false,
+      "container": false,
+      "containerColor": -1,
+      "lockColor": -1,
+      "cv": 0,
+      "cc": 0,
+      "colored": false,
+      "lcol": -1,
+      "garage": false,
+      "gcol": 0,
+      "ice": 0,
+      "levels": [],
+      "cars": [
+        {
           "c": 7,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 1,
+          "h": true,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 9,
+          "h": true,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 0,
+          "h": true,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 10,
+          "h": true,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 0,
           "h": false,
           "l": 0,
           "k": false,

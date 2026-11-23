@@ -207,6 +207,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   renderers: []
   depthBias: -0.06
+  elbowScale: 1
+  hoseRadiusScale: 1
+  socketInset: 0
+  hoseLift: 0
+  tuning: {fileID: 11400000, guid: cc6da9517398501478a64a51619338f5, type: 2}
 --- !u!1 &8682050528072587699
 GameObject:
   m_ObjectHideFlags: 0

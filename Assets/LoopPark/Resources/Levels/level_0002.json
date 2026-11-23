@@ -2,7 +2,7 @@
   "id": 2,
   "difficulty": 0,
   "capacity": 4,
-  "slotCapacity": 5,
+  "slotCapacity": 4,
   "loopLimit": 5,
   "columns": [
     {
@@ -21,13 +21,6 @@
       "levels": [],
       "cars": [
         {
-          "c": 0,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
           "c": 14,
           "h": false,
           "l": 0,
@@ -43,6 +36,13 @@
         },
         {
           "c": 14,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 0,
           "h": false,
           "l": 0,
           "k": false,
@@ -66,13 +66,6 @@
       "levels": [],
       "cars": [
         {
-          "c": 1,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
           "c": 14,
           "h": false,
           "l": 0,
@@ -88,6 +81,13 @@
         },
         {
           "c": 14,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 1,
           "h": false,
           "l": 0,
           "k": false,

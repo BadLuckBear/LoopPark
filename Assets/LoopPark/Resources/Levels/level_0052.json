@@ -2,7 +2,7 @@
   "id": 52,
   "difficulty": 0,
   "capacity": 5,
-  "slotCapacity": 6,
+  "slotCapacity": 5,
   "loopLimit": 5,
   "columns": [
     {
@@ -21,7 +21,21 @@
       "levels": [],
       "cars": [
         {
-          "c": 7,
+          "c": 9,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 10,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 0,
           "h": false,
           "l": 0,
           "k": false,
@@ -35,21 +49,7 @@
           "lk": false
         },
         {
-          "c": 0,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 10,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 9,
+          "c": 7,
           "h": false,
           "l": 0,
           "k": false,
@@ -73,21 +73,7 @@
       "levels": [],
       "cars": [
         {
-          "c": 1,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 0,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 1,
+          "c": 10,
           "h": false,
           "l": 0,
           "k": false,
@@ -101,7 +87,21 @@
           "lk": false
         },
         {
-          "c": 10,
+          "c": 1,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 0,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 1,
           "h": false,
           "l": 0,
           "k": false,
@@ -125,7 +125,21 @@
       "levels": [],
       "cars": [
         {
-          "c": 10,
+          "c": 14,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 9,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 0,
           "h": false,
           "l": 0,
           "k": false,
@@ -139,21 +153,7 @@
           "lk": false
         },
         {
-          "c": 0,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 9,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 14,
+          "c": 10,
           "h": false,
           "l": 0,
           "k": false,
@@ -177,6 +177,20 @@
       "levels": [],
       "cars": [
         {
+          "c": 1,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 14,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
           "c": 9,
           "h": false,
           "l": 0,
@@ -192,20 +206,6 @@
         },
         {
           "c": 9,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 14,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 1,
           "h": false,
           "l": 0,
           "k": false,
@@ -236,7 +236,7 @@
           "lk": false
         },
         {
-          "c": 4,
+          "c": 10,
           "h": false,
           "l": 0,
           "k": false,
@@ -250,7 +250,7 @@
           "lk": false
         },
         {
-          "c": 10,
+          "c": 4,
           "h": false,
           "l": 0,
           "k": false,
@@ -284,7 +284,7 @@
           "lk": false
         },
         {
-          "c": 0,
+          "c": 8,
           "h": false,
           "l": 0,
           "k": false,
@@ -298,7 +298,7 @@
           "lk": false
         },
         {
-          "c": 0,
+          "c": 8,
           "h": false,
           "l": 0,
           "k": false,
@@ -325,7 +325,7 @@
           "lk": false
         },
         {
-          "c": 0,
+          "c": 8,
           "h": false,
           "l": 0,
           "k": false,
@@ -339,7 +339,7 @@
           "lk": false
         },
         {
-          "c": 0,
+          "c": 8,
           "h": false,
           "l": 0,
           "k": false,
@@ -366,7 +366,7 @@
           "lk": false
         },
         {
-          "c": 0,
+          "c": 8,
           "h": false,
           "l": 0,
           "k": false,

@@ -68,6 +68,82 @@ namespace LoopPark
         [Tooltip("可选：整车 prefab（可包含 Spine / 3D 模型），会替换以上所有 sprite。3D 模型请让车头朝 +Y、车顶朝 -Z（朝向相机）；挂一个实现 ICarSkin 的组件即可接收颜色和动画事件。")]
         public GameObject carPrefab;
 
+        [Header("机关 3D 模型")]
+        [Tooltip("集装箱外壳预制体（Container3D）。留空时关卡里的集装箱沿用 2D 占位卷帘门，便于回退。")]
+        public GameObject containerPrefab;
+
+        [Header("集装箱外壳：尺寸与深度（改完立即对新生成的集装箱生效）")]
+        [Tooltip("相对列宽的放大倍率：1.20 = 左右各外扩 10%，让箱体贴住车列")]
+        [Range(0.8f, 1.6f)] public float containerWidthScale = 1.20f;
+        [Tooltip("相对列高额外增加的高度（单位 cell）：0.06 ≈ 只补一层薄边，顶部不冒头")]
+        [Range(0f, 0.6f)] public float containerHeightExtraCells = 0.06f;
+        [Tooltip("背板落在列内所有车之后的深度余量（世界单位）：太小会挡车或与车 Z-fighting")]
+        [Range(0.05f, 1f)] public float containerBackMargin = 0.30f;
+        [Tooltip("正面（顶盖）落在列内最前一辆车/问号徽章之前的深度余量：太小会露出车顶")]
+        [Range(0.05f, 1f)] public float containerFrontMargin = 0.30f;
+
+        [Header("集装箱外壳：开箱动画时长（秒，可热调）")]
+        [Tooltip("阶段一：解锁提示物弹起缩小的时长")]
+        [Min(0f)] public float containerIconHideDuration = 0.12f;
+        [Tooltip("顶盖开始上移前的延迟")]
+        [Min(0f)] public float containerRoofDelay = 0.06f;
+        [Tooltip("阶段二：顶盖卷起（上移 + 顶边裁切）的时长")]
+        [Min(0.01f)] public float containerRoofRollDuration = 0.38f;
+        [Tooltip("阶段三：外框沿 +Y 收进顶边的时长")]
+        [Min(0f)] public float containerFrameHideDuration = 0.14f;
+        [Tooltip("上移距离倍率（相对箱体高度）：>1 保证完全移出裁切线")]
+        [Range(0.5f, 2f)] public float containerTravelMultiplier = 1.06f;
+
+        [Header("集装箱外壳：解锁提示物")]
+        [Tooltip("提示物尺寸（单位 cell）")]
+        [Range(0.2f, 2f)] public float containerIconSizeCells = 0.88f;
+        [Tooltip("提示物相对顶盖平面的前置距离（避免与顶盖同深度打架）")]
+        [Min(0f)] public float containerIconFrontOffset = 0.10f;
+        [Tooltip("任意颜色集装箱（containerColor < 0）用的图标；留空回退到程序锁图标")]
+        public Sprite containerAnyColorIcon;
+        [Tooltip("颜色 0（原始 1）：红")] public Sprite containerIconRed;
+        [Tooltip("颜色 1（原始 2）：黄")] public Sprite containerIconYellow;
+        [Tooltip("颜色 2（原始 3）：青绿")] public Sprite containerIconTeal;
+        [Tooltip("颜色 3（原始 4）：浅蓝")] public Sprite containerIconLightBlue;
+        [Tooltip("颜色 4（原始 5）：绿")] public Sprite containerIconGreen;
+        [Tooltip("颜色 5（原始 6）：棕")] public Sprite containerIconBrown;
+        [Tooltip("颜色 6（原始 7）：淡紫")] public Sprite containerIconLilac;
+        [Tooltip("颜色 7（原始 8）：粉")] public Sprite containerIconPink;
+        [Tooltip("颜色 8（原始 9）：橙")] public Sprite containerIconOrange;
+        [Tooltip("颜色 9（原始 10）：黑")] public Sprite containerIconBlack;
+        [Tooltip("颜色 10（原始 11）：紫")] public Sprite containerIconPurple;
+        [Tooltip("颜色 11（原始 12）：品红")] public Sprite containerIconMagenta;
+        [Tooltip("颜色 12（原始 13）：白")] public Sprite containerIconWhite;
+        [Tooltip("颜色 13（原始 14）：奶油")] public Sprite containerIconCream;
+        [Tooltip("颜色 14（原始 15）：蓝")] public Sprite containerIconBlue;
+
+        /// <summary>
+        /// 按关卡颜色索引取解锁图标（索引顺序与 Palette.Names 一致：0=红 … 14=蓝）。
+        /// 未配置返回 null，由 ContainerColorIcon 继续回退到预制体/程序锁。
+        /// </summary>
+        public Sprite GetContainerColorIcon(int colorIndex)
+        {
+            switch (colorIndex)
+            {
+                case 0: return containerIconRed;
+                case 1: return containerIconYellow;
+                case 2: return containerIconTeal;
+                case 3: return containerIconLightBlue;
+                case 4: return containerIconGreen;
+                case 5: return containerIconBrown;
+                case 6: return containerIconLilac;
+                case 7: return containerIconPink;
+                case 8: return containerIconOrange;
+                case 9: return containerIconBlack;
+                case 10: return containerIconPurple;
+                case 11: return containerIconMagenta;
+                case 12: return containerIconWhite;
+                case 13: return containerIconCream;
+                case 14: return containerIconBlue;
+                default: return null;
+            }
+        }
+
         [Header("颜色表（15 个，顺序与关卡颜色索引一致）")]
         [Tooltip("15 种车身颜色，数组下标对应关卡中的颜色编号；播放时调整会刷新已有车辆。")]
         public Color[] carColors;

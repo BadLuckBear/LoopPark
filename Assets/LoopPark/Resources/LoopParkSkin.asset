@@ -20,6 +20,34 @@ MonoBehaviour:
   carDirectionalSprites: []
   carDirectionalDetails: []
   carPrefab: {fileID: 3597396984039126186, guid: e6ba8be7312ad5e4994387c17c973b6e, type: 3}
+  containerPrefab: {fileID: 3573832109988542829, guid: da12f2ffd624349449466264597f65cb, type: 3}
+  containerWidthScale: 1.2
+  containerHeightExtraCells: 0.06
+  containerBackMargin: 0.3
+  containerFrontMargin: 0.3
+  containerIconHideDuration: 0.12
+  containerRoofDelay: 0.06
+  containerRoofRollDuration: 0.38
+  containerFrameHideDuration: 0.14
+  containerTravelMultiplier: 1.06
+  containerIconSizeCells: 0.88
+  containerIconFrontOffset: 0.1
+  containerAnyColorIcon: {fileID: 0}
+  containerIconRed: {fileID: 0}
+  containerIconYellow: {fileID: 0}
+  containerIconTeal: {fileID: 0}
+  containerIconLightBlue: {fileID: 0}
+  containerIconGreen: {fileID: 0}
+  containerIconBrown: {fileID: 0}
+  containerIconLilac: {fileID: 0}
+  containerIconPink: {fileID: 0}
+  containerIconOrange: {fileID: 0}
+  containerIconBlack: {fileID: 0}
+  containerIconPurple: {fileID: 0}
+  containerIconMagenta: {fileID: 0}
+  containerIconWhite: {fileID: 0}
+  containerIconCream: {fileID: 0}
+  containerIconBlue: {fileID: 0}
   carColors:
   - {r: 0.7264706, g: 0.13235295, b: 0.13529412, a: 1}
   - {r: 0.7147059, g: 0.6, b: 0.058823533, a: 1}

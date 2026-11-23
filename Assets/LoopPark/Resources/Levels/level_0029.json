@@ -2,7 +2,7 @@
   "id": 29,
   "difficulty": 2,
   "capacity": 5,
-  "slotCapacity": 6,
+  "slotCapacity": 5,
   "loopLimit": 5,
   "columns": [
     {
@@ -28,21 +28,21 @@
           "lk": false
         },
         {
-          "c": 10,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 10,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
           "c": 4,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 10,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 10,
           "h": false,
           "l": 0,
           "k": false,
@@ -72,40 +72,40 @@
       "ice": 0,
       "levels": [],
       "cars": [
+        {
+          "c": 14,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 0,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 9,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 10,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
         {
           "c": 2,
           "h": false,
           "l": 0,
           "k": false,
           "lk": false
-        },
-        {
-          "c": 10,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 9,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 0,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 14,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
         }
       ]
     },
@@ -125,7 +125,7 @@
       "levels": [],
       "cars": [
         {
-          "c": 0,
+          "c": 10,
           "h": false,
           "l": 0,
           "k": false,
@@ -153,7 +153,7 @@
           "lk": false
         },
         {
-          "c": 10,
+          "c": 0,
           "h": false,
           "l": 0,
           "k": false,
@@ -176,20 +176,6 @@
       "ice": 0,
       "levels": [],
       "cars": [
-        {
-          "c": 7,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 1,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
         {
           "c": 4,
           "h": false,
@@ -210,6 +196,20 @@
           "l": 0,
           "k": false,
           "lk": false
+        },
+        {
+          "c": 1,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 7,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
         }
       ]
     },
@@ -229,21 +229,7 @@
       "levels": [],
       "cars": [
         {
-          "c": 14,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 9,
-          "h": false,
-          "l": 0,
-          "k": false,
-          "lk": false
-        },
-        {
-          "c": 10,
+          "c": 1,
           "h": false,
           "l": 0,
           "k": false,
@@ -257,7 +243,21 @@
           "lk": false
         },
         {
-          "c": 1,
+          "c": 10,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 9,
+          "h": false,
+          "l": 0,
+          "k": false,
+          "lk": false
+        },
+        {
+          "c": 14,
           "h": false,
           "l": 0,
           "k": false,

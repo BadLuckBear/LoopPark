@@ -19,51 +19,51 @@ namespace LoopPark.EditorTools
         const string SkinPath = "Assets/LoopPark/Resources/LoopParkSkin.asset";
         public const int LevelCount = 60;
 
-        [MenuItem("LoopPark/1. 配置工程（场景、构建设置、皮肤）")]
-        public static void Setup()
-        {
-            Directory.CreateDirectory("Assets/LoopPark/Scenes");
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            var cam = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
-            cam.tag = "MainCamera";
-            var c = cam.GetComponent<Camera>();
-            c.orthographic = true;
-            c.orthographicSize = 9.6f;
-            c.transform.position = new Vector3(0, 0, -10);
-            c.clearFlags = CameraClearFlags.SolidColor;
-            new GameObject("Bootstrap").AddComponent<Bootstrap>();
-            EditorSceneManager.SaveScene(scene, ScenePath);
-            var appScenes = AppScenePaths();
-            if (System.Array.TrueForAll(appScenes, File.Exists))
-                EditorBuildSettings.scenes = System.Array.ConvertAll(appScenes, path => new EditorBuildSettingsScene(path, true));
-            else
-                EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
+        // [MenuItem("LoopPark/1. 配置工程（场景、构建设置、皮肤）")]
+        // public static void Setup()
+        // {
+        //     Directory.CreateDirectory("Assets/LoopPark/Scenes");
+        //     var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        //     var cam = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
+        //     cam.tag = "MainCamera";
+        //     var c = cam.GetComponent<Camera>();
+        //     c.orthographic = true;
+        //     c.orthographicSize = 9.6f;
+        //     c.transform.position = new Vector3(0, 0, -10);
+        //     c.clearFlags = CameraClearFlags.SolidColor;
+        //     new GameObject("Bootstrap").AddComponent<Bootstrap>();
+        //     EditorSceneManager.SaveScene(scene, ScenePath);
+        //     var appScenes = AppScenePaths();
+        //     if (System.Array.TrueForAll(appScenes, File.Exists))
+        //         EditorBuildSettings.scenes = System.Array.ConvertAll(appScenes, path => new EditorBuildSettingsScene(path, true));
+        //     else
+        //         EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
 
-            if (AssetDatabase.LoadAssetAtPath<SkinConfig>(SkinPath) == null)
-            {
-                var skin = ScriptableObject.CreateInstance<SkinConfig>();
-                skin.carColors = (Color[])Palette.Default.Clone();
-                AssetDatabase.CreateAsset(skin, SkinPath);
-            }
+        //     if (AssetDatabase.LoadAssetAtPath<SkinConfig>(SkinPath) == null)
+        //     {
+        //         var skin = ScriptableObject.CreateInstance<SkinConfig>();
+        //         skin.carColors = (Color[])Palette.Default.Clone();
+        //         AssetDatabase.CreateAsset(skin, SkinPath);
+        //     }
 
-            PlayerSettings.companyName = "LoopParkStudio";
-            PlayerSettings.productName = "环线停车场";
-            PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Android, "com.yocean.carloop");
-            PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
-            PlayerSettings.allowedAutorotateToLandscapeLeft = false;
-            PlayerSettings.allowedAutorotateToLandscapeRight = false;
-            PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
-            PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
-            PlayerSettings.defaultScreenWidth = 540;
-            PlayerSettings.defaultScreenHeight = 960;
-            PlayerSettings.resizableWindow = true;
-            PlayerSettings.runInBackground = true;
-            AssetDatabase.SaveAssets();
-            Debug.Log("[LoopPark] Setup done");
-        }
+        //     PlayerSettings.companyName = "LoopParkStudio";
+        //     PlayerSettings.productName = "环线停车场";
+        //     PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Android, "com.yocean.carloop");
+        //     PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
+        //     PlayerSettings.allowedAutorotateToLandscapeLeft = false;
+        //     PlayerSettings.allowedAutorotateToLandscapeRight = false;
+        //     PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
+        //     PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
+        //     PlayerSettings.defaultScreenWidth = 540;
+        //     PlayerSettings.defaultScreenHeight = 960;
+        //     PlayerSettings.resizableWindow = true;
+        //     PlayerSettings.runInBackground = true;
+        //     AssetDatabase.SaveAssets();
+        //     Debug.Log("[LoopPark] Setup done");
+        // }
 
-        [MenuItem("LoopPark/2. 生成关卡（60 关，覆盖）")]
-        public static void GenerateLevels() => GenerateRange(1, LevelCount);
+        // [MenuItem("LoopPark/2. 生成关卡（60 关，覆盖）")]
+        // public static void GenerateLevels() => GenerateRange(1, LevelCount);
 
         public const string CurvePath = "Assets/LoopPark/Editor/Data/difficulty_curve.csv";
 
@@ -164,8 +164,8 @@ namespace LoopPark.EditorTools
         /// <summary>命令行：-executeMethod LoopPark.EditorTools.ProjectSetup.BatchAll</summary>
         public static void BatchAll()
         {
-            Setup();
-            GenerateLevels();
+            //Setup();
+            //GenerateLevels();
         }
     }
 }

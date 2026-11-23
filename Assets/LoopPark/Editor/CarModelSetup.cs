@@ -32,6 +32,8 @@ namespace LoopPark.EditorTools
         [MenuItem("LoopPark/配置 3D 车模型 (car.fbx → CarModel.prefab)")]
         public static void Setup()
         {
+            // 绑带件要在运行时读顶点来量“竖脚轴线 / 直口中心 / 口径”，必须先开 Read/Write。
+            EnsureReadable(StrapFbxPath);
             var fbx = AssetDatabase.LoadAssetAtPath<GameObject>(FbxPath);
             if (fbx == null) { Debug.LogError("[LoopPark] 找不到 " + FbxPath); return; }
             var coverFbx = AssetDatabase.LoadAssetAtPath<GameObject>(CoverFbxPath);
@@ -196,6 +198,19 @@ namespace LoopPark.EditorTools
             }
             AssetDatabase.SaveAssets();
             Debug.Log("[LoopPark] CarModel.prefab 已生成并接入 SkinConfig");
+        }
+
+        /// <summary>
+        /// 绑带件要在运行时读顶点（量竖脚轴线与直口），确保 FBX 勾了 Read/Write；
+        /// 几十 KB 的附件件内存代价可忽略，否则 StrapArt 只能退回实测常量。
+        /// </summary>
+        static void EnsureReadable(string path)
+        {
+            var importer = AssetImporter.GetAtPath(path) as ModelImporter;
+            if (importer == null || importer.isReadable) return;
+            importer.isReadable = true;
+            importer.SaveAndReimport();
+            Debug.Log("[LoopPark] 已为 " + path + " 开启 Read/Write（绑带几何测量需要读顶点）");
         }
 
         /// <summary>
