@@ -90,10 +90,13 @@ namespace LoopPark
     {
         CarView car;
         readonly LineRenderer[] lines = new LineRenderer[2];
+        readonly GameObject[] vestigeObjects = new GameObject[2];
+        readonly TrailRenderer[] vestigeTrails = new TrailRenderer[2];
         readonly Vector3[] last = new Vector3[2];
         float width;
         float fade = 2f;
         bool finished;
+        bool usingVestige;
 
         public static TireTrail Begin(CarView car, Transform parent)
         {
@@ -103,6 +106,23 @@ namespace LoopPark
             var trail = go.AddComponent<TireTrail>();
             trail.car = car;
             trail.width = car.Width;
+            var vestigeFx = SkinConfig.Instance.tireTrailFx;
+            if (vestigeFx != null && vestigeFx.GetComponentInChildren<TrailRenderer>(true) != null)
+            {
+                // Use two authored trails so each rear wheel keeps its own contact path.
+                trail.usingVestige = true;
+                for (int i = 0; i < 2; i++)
+                {
+                    var effect = Instantiate(vestigeFx, go.transform);
+                    effect.name = i == 0 ? "Vestige_Left" : "Vestige_Right";
+                    trail.vestigeObjects[i] = effect;
+                    trail.vestigeTrails[i] = effect.GetComponentInChildren<TrailRenderer>(true);
+                    trail.SetVestigePosition(i, trail.WheelPosition(i));
+                    trail.vestigeTrails[i].emitting = true;
+                }
+                return trail;
+            }
+
             for (int i = 0; i < 2; i++)
             {
                 var wheel = new GameObject(i == 0 ? "Left" : "Right");
@@ -126,6 +146,18 @@ namespace LoopPark
         public void Stop()
         {
             if (finished) return;
+            if (usingVestige)
+            {
+                foreach (var trail in vestigeTrails)
+                    if (trail != null) trail.emitting = false;
+                fade = 0f;
+                foreach (var trail in vestigeTrails)
+                    if (trail != null) fade = Mathf.Max(fade, trail.time);
+                fade += 0.05f;
+                finished = true;
+                return;
+            }
+
             if (car != null)
                 for (int i = 0; i < 2; i++)
                 {
@@ -146,28 +178,41 @@ namespace LoopPark
         {
             if (!finished && car != null)
             {
-                for (int i = 0; i < 2; i++)
+                if (usingVestige)
                 {
-                    var p = WheelPosition(i);
-                    if ((p - last[i]).sqrMagnitude < width * width * 0.0036f && car.Moving) continue;
-                    lines[i].positionCount++;
-                    lines[i].SetPosition(lines[i].positionCount - 1, p);
-                    last[i] = p;
+                    for (int i = 0; i < 2; i++) SetVestigePosition(i, WheelPosition(i));
+                    if (!car.Moving) Stop();
                 }
-                if (!car.Moving) Stop();
+                else
+                {
+                    for (int i = 0; i < 2; i++)
+                    {
+                        var p = WheelPosition(i);
+                        if ((p - last[i]).sqrMagnitude < width * width * 0.0036f && car.Moving) continue;
+                        lines[i].positionCount++;
+                        lines[i].SetPosition(lines[i].positionCount - 1, p);
+                        last[i] = p;
+                    }
+                    if (!car.Moving) Stop();
+                }
             }
             else finished = true;
 
             if (!finished) return;
             fade -= Time.deltaTime;
             if (fade <= 0f) { Destroy(gameObject); return; }
-            SetAlpha(0.32f * fade / 2f);
+            if (!usingVestige) SetAlpha(0.32f * fade / 2f);
         }
 
         void SetAlpha(float alpha)
         {
             var color = new Color(0.08f, 0.09f, 0.13f, alpha);
             foreach (var line in lines) line.startColor = line.endColor = color;
+        }
+
+        void SetVestigePosition(int side, Vector3 position)
+        {
+            if (vestigeObjects[side] != null) vestigeObjects[side].transform.position = position;
         }
     }
 }

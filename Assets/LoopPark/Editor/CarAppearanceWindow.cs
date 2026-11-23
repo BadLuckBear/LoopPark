@@ -35,8 +35,10 @@ namespace LoopPark.EditorTools
             settings.Update();
             scroll = EditorGUILayout.BeginScrollView(scroll);
             EditorGUI.BeginChangeCheck();
-            Field("carModelScale", "车辆缩放 X / Y");
-            Field("carViewTilt", "俯视倾角");
+            Field("carModelScale", "车辆缩放 X / Y / Z");
+            Field("carViewTilt", "停车区俯视倾角");
+            Field("departureCarViewTilt", "发车区俯视倾角");
+            Field("carViewTiltTransitionTime", "区域视角过渡时长");
             EditorGUILayout.Space();
             var labels = new string[Palette.Count + 1];
             for (int i = 0; i < Palette.Count; i++) labels[i] = i + "  " + Palette.Names[i];
@@ -209,7 +211,7 @@ namespace LoopPark.EditorTools
             var config = AssetDatabase.LoadAssetAtPath<SkinConfig>(ConfigPath);
             Undo.RecordObject(config, "应用车辆外观");
             config.carColors = (Color[])Palette.Default.Clone();
-            config.carModelScale = new Vector2(1.4f, 1.2f);
+            config.carModelScale = new Vector3(1.4f, 1.2f, 1f);
             config.EnsureCarAppearances();
             for (int i = 0; i < config.carAppearanceByColor.Length; i++)
             {

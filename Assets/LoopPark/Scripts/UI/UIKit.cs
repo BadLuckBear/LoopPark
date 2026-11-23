@@ -5,9 +5,19 @@ using UnityEngine.UI;
 
 namespace LoopPark
 {
-    /// <summary>运行时 uGUI 构建工具（参考分辨率 1080x1920）。</summary>
+    /// <summary>运行时 uGUI 构建工具（参考分辨率 1125x2436）。</summary>
     public static class UIKit
     {
+        public static readonly Vector2 DesignSize = new Vector2(1125, 2436);
+        public static Sprite Art(string name) => Resources.Load<Sprite>("ArtUI/" + name);
+
+        public static void ScaleForDesign(CanvasScaler scaler)
+        {
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = DesignSize;
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+        }
+
         public static Sprite RoundSprite => SkinConfig.Instance.buttonSprite != null ? SkinConfig.Instance.buttonSprite : SpriteFactory.RoundedRect(96, 36, 10);
         public static Sprite PanelSprite => SkinConfig.Instance.panelSprite != null ? SkinConfig.Instance.panelSprite : SpriteFactory.RoundedRect(96, 40);
         public static Sprite FlatRound => SpriteFactory.RoundedRect(64, 28);
@@ -132,19 +142,27 @@ namespace LoopPark
             var dim = Img(parent, name, new Color(0, 0, 0, 0.62f));
             Stretch(dim.rectTransform);
             root = dim.gameObject;
-            var card = Img(dim.transform, "Card", SkinConfig.Instance.panelColor, PanelSprite);
-            Place(card.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(900, height));
+            var card = Img(dim.transform, "Card", Color.white, Art("frame_bg"));
+            Place(card.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(916, height));
             card.gameObject.AddComponent<PopIn>();
             return card.rectTransform;
         }
 
         public static Text Title(RectTransform card, string text, Color headColor)
         {
-            var head = Img(card, "Head", headColor, RoundSprite);
-            Place(head.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -10), new Vector2(760, 130));
+            var head = Img(card, "Head", Color.white, Art(headColor.r > .8f ? "frame_title (1)" : "frame_title"));
+            Place(head.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -30), new Vector2(650, 187));
             var t = Txt(head.transform, text, 64, Color.white, TextAnchor.MiddleCenter, true);
             Stretch(t.rectTransform);
             return t;
+        }
+
+        public static void Paint(Button button, string art)
+        {
+            var sprite = Art(art);
+            button.image.sprite = sprite;
+            button.image.color = Color.white;
+            button.image.type = sprite != null && sprite.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
         }
 
         public static Vector2 WorldToCanvas(RectTransform canvasRect, Vector3 world)
@@ -155,44 +173,4 @@ namespace LoopPark
         }
     }
 
-    /// <summary>按下缩小、松开回弹。</summary>
-    public class PressScale : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
-    {
-        float target = 1f;
-        public void OnPointerDown(PointerEventData e) => target = 0.92f;
-        public void OnPointerUp(PointerEventData e) => target = 1f;
-        void Update()
-        {
-            float s = Mathf.Lerp(transform.localScale.x, target, 1 - Mathf.Exp(-20f * Time.unscaledDeltaTime));
-            transform.localScale = new Vector3(s, s, 1);
-        }
-    }
-
-    /// <summary>弹出动画。</summary>
-    public class PopIn : MonoBehaviour
-    {
-        float t;
-        void OnEnable() { t = 0; transform.localScale = Vector3.one * 0.6f; }
-        void Update()
-        {
-            if (t >= 1) return;
-            t = Mathf.Min(1, t + Time.unscaledDeltaTime * 4f);
-            float k = 1 + Mathf.Sin(t * Mathf.PI) * 0.12f * (1 - t);
-            float s = Mathf.Lerp(0.6f, 1f, 1 - Mathf.Pow(1 - t, 3)) * k;
-            transform.localScale = new Vector3(s, s, 1);
-        }
-    }
-
-    /// <summary>上下浮动（提示手指等）。</summary>
-    public class Bob : MonoBehaviour
-    {
-        public float amp = 20f, speed = 5f;
-        public Vector2 basePos;
-        RectTransform rt;
-        void Awake() => rt = (RectTransform)transform;
-        void Update()
-        {
-            rt.anchoredPosition = basePos + new Vector2(0, -Mathf.Abs(Mathf.Sin(Time.unscaledTime * speed)) * amp);
-        }
-    }
 }

@@ -20,8 +20,13 @@ namespace LoopPark
     {
         void SetCarColor(Color color, bool hidden, int colorIndex);
         void PlayEvent(string evt); // "tap" "park" "push" "clear" "reveal"
+        void SetRevealArea(bool upperArea);
+        /// <summary>绑带配对状态：成对车辆显示车顶吸盘附件，并把软管朝向搭档车的吸盘。</summary>
+        void SetLinked(bool on, CarStrap partner);
     }
 
+    // Apply path motion after GameController has advanced the loop for this frame.
+    [DefaultExecutionOrder(10)]
     public class CarView : MonoBehaviour
     {
         public int color;
@@ -61,8 +66,11 @@ namespace LoopPark
 
         // 路径移动
         readonly List<Vector3> path = new List<Vector3>();
+        // Index into the immutable path for this frame; removing points would allocate and shift the list.
+        int pathIndex;
         float moveSpeed;
-        float parkingSpeed, parkingAcceleration, parkingDistance;
+        // Portion of the current frame left after GameController starts this movement.
+        float parkingSpeed, parkingAcceleration, parkingDistance, firstPathFrameTime;
         CarView parkingLeader;
         float parkingGap;
         float departureElapsed, departureRamp, departureDuration;
@@ -75,14 +83,20 @@ namespace LoopPark
 
         // 刹车前倾（弹簧，单位：度，正 = 车头向下）
         float pitch, pitchVel;
+        // 区域视角使用独立阻尼，避免发车、环路和停车之间突然切换。
+        float viewTilt, viewTiltVelocity;
+        bool viewTiltInitialized;
         // 待机（发车道第一排）：发动机抖动 + 尾气
         bool idleWanted;
         float idleT;
+        GameObject idleExhaustObject;
+        ParticleSystem[] idleExhaustSystems;
         ParticleSystem exhaust;
         static Material exhaustMat;
         TireTrail tireTrail;
 
-        public bool Moving => path.Count > 0;
+        // A path is active until every sampled point has been consumed.
+        public bool Moving => pathIndex < path.Count;
 
         public static CarView Create(Transform parent, int color, bool hidden, float width)
         {
@@ -174,6 +188,7 @@ namespace LoopPark
         public void SetLayer(int baseOrder)
         {
             if (modelDepth != null) modelDepth.SetLayer(baseOrder);
+            customSkin?.SetRevealArea(state == CarState.Parked);
             if (under) under.sortingOrder = baseOrder - 1;
             if (body) body.sortingOrder = baseOrder;
             if (detail) detail.sortingOrder = baseOrder + 1;
@@ -188,7 +203,7 @@ namespace LoopPark
             if (visual == null) return;
             var skin = SkinConfig.Instance;
             // 在模型层缩放，保留上层已有的刹车、弹跳和消除动画。
-            if (model != null) model.localScale = new Vector3(skin.carModelScale.x, skin.carModelScale.y, 1f);
+            if (model != null) model.localScale = skin.carModelScale;
             var c = hidden ? skin.hiddenCarColor : Palette.Get(color);
             if (customSkin != null) customSkin.SetCarColor(c, hidden, color);
             if (body)
@@ -214,10 +229,11 @@ namespace LoopPark
         public void Reveal()
         {
             if (!hidden) return;
+            // 先播放布料爆开，车身颜色在布料仍覆盖时切换，避免显色瞬间穿模。
+            customSkin?.PlayEvent("reveal");
             hidden = false;
             Refresh();
             Punch(0.35f);
-            customSkin?.PlayEvent("reveal");
         }
 
         public void Punch(float amount = 0.25f)
@@ -226,6 +242,12 @@ namespace LoopPark
         }
 
         public void PlayEvent(string evt) => customSkin?.PlayEvent(evt);
+
+        /// <summary>绑带配对状态：转给 3D 皮肤显示吸盘附件，并让软管指向搭档（取代旧的 2D 粗绳）。</summary>
+        public void SetLinked(bool on, CarStrap partner) => customSkin?.SetLinked(on, partner);
+
+        /// <summary>本车的车顶附件；2D 占位车没有，返回 null。</summary>
+        public CarStrap Strap => (customSkin as CarSkin3D)?.strap ?? GetComponentInChildren<CarStrap>(true);
 
         public void SetAngle(float deg, bool instant)
         {
@@ -238,6 +260,9 @@ namespace LoopPark
         {
             path.Clear();
             path.AddRange(points);
+            // Start from the first point while keeping the caller's frame timing intact.
+            pathIndex = 0;
+            firstPathFrameTime = float.PositiveInfinity;
             moveSpeed = speed;
             parkingAcceleration = 0f;
             parkingLeader = null;
@@ -248,9 +273,11 @@ namespace LoopPark
         }
 
         public void ParkAlong(IList<Vector3> points, float entrySpeed, float maxSpeed, float acceleration, Action done,
-            bool face = true, CarView leader = null, float gap = 0f)
+            bool face = true, CarView leader = null, float gap = 0f, float firstFrameTime = float.PositiveInfinity)
         {
             MoveAlong(points, maxSpeed, done, face);
+            // Parking can begin partway through a frame after loop movement reaches the entry.
+            firstPathFrameTime = firstFrameTime;
             parkingSpeed = entrySpeed;
             parkingAcceleration = acceleration;
             parkingLeader = leader;
@@ -271,9 +298,12 @@ namespace LoopPark
 
         public static float DepartureTime(float distance, float speed) => distance / speed + DepartureRamp(distance, speed) * 0.5f;
 
-        public void DepartAlong(IList<Vector3> points, float distance, float speed, Action done)
+        public void DepartAlong(IList<Vector3> points, float distance, float speed, Action done,
+            float firstFrameTime = float.PositiveInfinity)
         {
             MoveAlong(points, speed, done, brake: false);
+            // Preserve the unused slice of the dispatch frame for continuous motion.
+            firstPathFrameTime = firstFrameTime;
             departureElapsed = 0f;
             departureRamp = DepartureRamp(distance, speed);
             departureDuration = DepartureTime(distance, speed);
@@ -304,13 +334,22 @@ namespace LoopPark
         /// <summary>发车道第一排：待机抖动 + 尾气。移动中/离开车道时自动停止。</summary>
         public void SetIdle(bool on) => idleWanted = on;
 
-        bool IdleActive => idleWanted && state == CarState.InLane && path.Count == 0;
+        bool IdleActive => idleWanted && state == CarState.InLane && pathIndex >= path.Count;
 
         void UpdateIdle(float dt)
         {
             bool on = IdleActive;
             if (on) idleT += dt;
             var skin = SkinConfig.Instance;
+            if (skin.idleExhaustFx != null)
+            {
+                if (on && idleExhaustObject == null) BuildConfiguredExhaust(skin);
+                if (idleExhaustObject != null)
+                {
+                    SetConfiguredExhaustPlaying(on);
+                    return;
+                }
+            }
             if (on && skin.exhaustRate > 0 && exhaust == null) BuildExhaust();
             if (exhaust == null) return;
             if (on && skin.exhaustRate > 0)
@@ -318,6 +357,28 @@ namespace LoopPark
                 if (!exhaust.isEmitting) exhaust.Play(true);
             }
             else if (exhaust.isEmitting) exhaust.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
+
+        void BuildConfiguredExhaust(SkinConfig skin)
+        {
+            // Parent under Visual so the authored effect follows the car's visual scale and depth.
+            idleExhaustObject = Instantiate(skin.idleExhaustFx, visual);
+            idleExhaustObject.name = "IdleExhaust";
+            idleExhaustObject.transform.localPosition = new Vector3(skin.exhaustOffset.x, skin.exhaustOffset.y, -2f);
+            idleExhaustObject.transform.localRotation = Quaternion.identity;
+            idleExhaustSystems = idleExhaustObject.GetComponentsInChildren<ParticleSystem>(true);
+            SetConfiguredExhaustPlaying(false);
+        }
+
+        void SetConfiguredExhaustPlaying(bool on)
+        {
+            if (idleExhaustSystems == null) return;
+            foreach (var particle in idleExhaustSystems)
+            {
+                if (particle == null) continue;
+                if (on) particle.Play(true);
+                else particle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
         }
 
         void BuildExhaust()
@@ -401,19 +462,38 @@ namespace LoopPark
         {
             tireTrail?.Stop();
             path.Clear();
+            // Reset the cursor with the path so a later command starts cleanly.
+            pathIndex = 0;
             onArrive = null;
         }
 
         void Update()
         {
             float dt = Time.deltaTime;
-            if (path.Count > 0)
+            var skin = SkinConfig.Instance;
+            float targetViewTilt = state == CarState.InLane || state == CarState.Ejecting
+                ? skin.departureCarViewTilt
+                : skin.carViewTilt;
+            if (!viewTiltInitialized)
+            {
+                viewTilt = targetViewTilt;
+                viewTiltInitialized = true;
+            }
+            else
+            {
+                viewTilt = Mathf.SmoothDampAngle(viewTilt, targetViewTilt, ref viewTiltVelocity,
+                    Mathf.Max(0.01f, skin.carViewTiltTransitionTime), Mathf.Infinity, dt);
+            }
+            if (pathIndex < path.Count)
             {
                 var pos = transform.localPosition;
-                float step = moveSpeed * dt;
+                // Consume only the time available after the logical movement phase.
+                float pathDt = Mathf.Min(dt, firstPathFrameTime);
+                firstPathFrameTime = float.PositiveInfinity;
+                float step = moveSpeed * pathDt;
                 if (departureDuration > 0f)
                 {
-                    float nextElapsed = departureElapsed + dt;
+                    float nextElapsed = departureElapsed + pathDt;
                     step = nextElapsed >= departureDuration ? float.PositiveInfinity :
                         DepartureDistance(nextElapsed, departureRamp, moveSpeed) - DepartureDistance(departureElapsed, departureRamp, moveSpeed);
                     departureElapsed = nextElapsed;
@@ -421,18 +501,19 @@ namespace LoopPark
                 else if (parkingAcceleration > 0f)
                 {
                     float stoppingSpeed = Mathf.Sqrt(2f * parkingAcceleration * parkingDistance);
-                    parkingSpeed = Mathf.Min(stoppingSpeed, Mathf.MoveTowards(parkingSpeed, moveSpeed, parkingAcceleration * dt));
-                    step = dt > 0f && parkingDistance < 0.002f ? 0.003f : parkingSpeed * dt;
-                    if (parkingLeader != null && parkingLeader.state == CarState.Entering && dt > 0f)
+                    parkingSpeed = Mathf.Min(stoppingSpeed, Mathf.MoveTowards(parkingSpeed, moveSpeed, parkingAcceleration * pathDt));
+                    step = pathDt > 0f && parkingDistance < 0.002f ? 0.003f : parkingSpeed * pathDt;
+                    if (parkingLeader != null && parkingLeader.state == CarState.Entering && pathDt > 0f)
                     {
                         step = ParkingFollowStep(step, pos.y, parkingLeader.transform.localPosition.y, parkingGap);
-                        parkingSpeed = Mathf.Min(parkingSpeed, step / dt);
+                        parkingSpeed = Mathf.Min(parkingSpeed, step / pathDt);
                     }
                     parkingDistance = Mathf.Max(0f, parkingDistance - step);
                 }
-                while (step > 0 && path.Count > 0)
+                while (step > 0 && pathIndex < path.Count)
                 {
-                    var to = path[0];
+                    // Carry leftover distance across short samples instead of stopping at each point.
+                    var to = path[pathIndex];
                     var delta = to - pos;
                     float dist = delta.magnitude;
                     if (dist > 1e-4f) lastMoveDir = delta / dist;
@@ -442,7 +523,7 @@ namespace LoopPark
                     {
                         pos = to;
                         step -= dist;
-                        path.RemoveAt(0);
+                        pathIndex++;
                     }
                     else
                     {
@@ -451,8 +532,11 @@ namespace LoopPark
                     }
                 }
                 transform.localPosition = pos;
-                if (path.Count == 0)
+                if (pathIndex >= path.Count)
                 {
+                    // Release the sampled path only after arrival; Moving remains deterministic until then.
+                    path.Clear();
+                    pathIndex = 0;
                     tireTrail?.Stop();
                     if (brakeOnArrive) Brake();
                     var cb = onArrive;
@@ -486,13 +570,12 @@ namespace LoopPark
 
             // 平滑转向
             float cur = transform.eulerAngles.z;
-            float next = Mathf.MoveTowardsAngle(cur, targetAngle, 720f * dt);
-            next = Mathf.LerpAngle(next, targetAngle, 1 - Mathf.Exp(-12f * dt));
+            float next = Mathf.LerpAngle(cur, targetAngle, 1f - Mathf.Exp(-14f * dt));
             transform.rotation = Quaternion.Euler(0, 0, next);
             // 3D 模型绕屏幕水平轴倾斜（与车头朝向无关），模拟斜俯视相机，能看到车头/车尾侧面；
             // 再叠加车身自身的前倾（绕车的左右轴 X，正 = 车头向下）和待机点头
             if (model != null)
-                model.rotation = Quaternion.AngleAxis(SkinConfig.Instance.carViewTilt, Vector3.right) * transform.rotation
+                model.rotation = Quaternion.AngleAxis(viewTilt, Vector3.right) * transform.rotation
                                  * Quaternion.Euler(pitch + shakePitch, 0f, 0f);
             else if (visual != null)
             {

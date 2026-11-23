@@ -79,7 +79,8 @@ namespace LoopPark
             var end = new Vector2(slot.x, TopY - turnDepth);
             var p1 = start + tangent * ((start.x - end.x) * 0.55f);
             var p2 = end + Vector2.up * (turnDepth * 0.55f);
-            const int samples = 12;
+            // More samples keep the cubic parking curve visually smooth at the car's speed.
+            const int samples = 24;
             var points = new Vector3[samples + 1];
             for (int i = 1; i <= samples; i++)
             {
@@ -97,7 +98,9 @@ namespace LoopPark
         {
             Vector3 end = Eval(endS, out var tangent);
             var p1 = start + Vector3.up * ((end.y - start.y) * 0.55f);
-            var p2 = end - (Vector3)tangent * ((end.x - start.x) * 0.6f);
+            // Ejection has little sideways room at the rightmost slot; give the final tangent more weight.
+            float tangentWeight = end.y < start.y ? 0.9f : 0.6f;
+            var p2 = end - (Vector3)tangent * ((end.x - start.x) * tangentWeight);
             float distance = 0f;
             var previous = start;
             for (int i = 0; i < points.Length; i++)

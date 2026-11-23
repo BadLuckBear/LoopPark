@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -139,7 +140,7 @@ namespace LoopPark.EditorTools
                 selected.carTaillightColor = Color.blue;
                 selected.carWheelColor = Color.red;
                 selected.carTireColor = Color.white;
-                config.carModelScale = new Vector2(1.6f, 1.3f);
+                config.carModelScale = new Vector3(1.6f, 1.3f, 1.1f);
                 config.RefreshCarAppearance();
                 CheckMaterials(skin, Color.magenta, selected);
                 var other = CarView.Create(root.transform, 0, false, 1);
@@ -147,7 +148,7 @@ namespace LoopPark.EditorTools
                 other.hidden = true;
                 other.Refresh();
                 CheckMaterials(other.GetComponentInChildren<CarSkin3D>(), config.hiddenCarColor, config.GetCarAppearance(-1));
-                Require(skin.transform.localScale == new Vector3(1.6f, 1.3f, 1), "运行时缩放没有刷新");
+                Require(skin.transform.localScale == new Vector3(1.6f, 1.3f, 1.1f), "运行时缩放没有刷新");
                 Debug.Log("[CarAppearanceChecks] PASS: 15 色、全部材质槽、同漆色不同编号独立参数、问号车、事件驱动刷新");
             }
             finally
@@ -162,12 +163,20 @@ namespace LoopPark.EditorTools
             }
         }
 
+        /// <summary>车衣覆盖层与绑带车顶附件各自管理材质，不属于车身部件。</summary>
+        static bool IsManagedOverlay(Renderer renderer) =>
+            renderer.GetComponentInParent<CarRevealCover>(true) != null ||
+            renderer.GetComponentInParent<CarStrap>(true) != null;
+
         /// <summary>检查实际 Renderer 属性块，保证配置确实进入渲染流程。</summary>
         static void CheckMaterials(CarSkin3D skin, Color paint, CarColorAppearance config)
         {
             var block = new MaterialPropertyBlock();
-            var sources = skin.appearance.carPrefab.GetComponentsInChildren<MeshRenderer>(true);
-            var renderers = skin.GetComponentsInChildren<MeshRenderer>(true);
+            // 车衣与绑带附件由各自组件管理材质（Buliao.mat / Strap.mat），不参与部件材质绑定检查。
+            var sources = skin.appearance.carPrefab.GetComponentsInChildren<MeshRenderer>(true)
+                .Where(r => !IsManagedOverlay(r)).ToArray();
+            var renderers = skin.GetComponentsInChildren<MeshRenderer>(true)
+                .Where(r => !IsManagedOverlay(r)).ToArray();
             Require(sources.Length == renderers.Length, "车辆网格数量与预制体不一致");
             for (int r = 0; r < renderers.Length; r++)
             {
@@ -183,7 +192,15 @@ namespace LoopPark.EditorTools
                     if (replacement != null)
                     {
                         Require(material == replacement, "部件没有绑定指定材质: " + original[i].name);
-                        Require(!block.HasColor("_Color") && !block.HasFloat("_Glossiness") && !block.HasColor("_SpecColor") && !block.HasColor("_EmissionColor"), "材质仍被运行时代码覆盖");
+                        // 车漆槽（car_base/car_jingzi）仍由运行时属性块写入当前车色，因为 15 种颜色共用同一份独立材质；
+                        // 其余换材质槽必须完全以材质自身参数渲染，不再被属性块覆盖。
+                        bool paintSlot = original[i].name == "car_base" || original[i].name == "car_jingzi";
+                        var expectedPaint = paint;
+                        expectedPaint.a = 1;
+                        Require(paintSlot ? block.GetColor("_Color") == expectedPaint : !block.HasColor("_Color"),
+                            "材质仍被运行时代码覆盖: " + original[i].name + " → " + material.name);
+                        Require(!block.HasFloat("_Glossiness") && !block.HasColor("_SpecColor") && !block.HasColor("_EmissionColor"),
+                            "材质仍被运行时代码覆盖: " + original[i].name + " → " + material.name);
                         Require(block.HasFloat("_CarDepth"), "换材质后丢失车辆深度");
                         continue;
                     }

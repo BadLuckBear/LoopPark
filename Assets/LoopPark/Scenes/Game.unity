@@ -245,6 +245,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eda87935697d53f4e9b7bf6c537746b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  boardScale: 1
+  carClearFx: {fileID: 8711987053305259259, guid: c432378bc4342a546a00ea5ec36700b9, type: 3}
 --- !u!4 &782972163
 Transform:
   m_ObjectHideFlags: 0

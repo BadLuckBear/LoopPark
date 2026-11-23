@@ -27,8 +27,12 @@ namespace LoopPark
         Image hudDiffBg;
         readonly Button[] boosterBtns = new Button[3];
         readonly Text[] boosterCounts = new Text[3];
+        Image[] boosterBadges;
+        Sprite availableBadge, buyBadge;
         // 弹窗
         GameObject modal;
+        // 只保存当前弹窗链路可返回的上一级页面，开始新流程或回主页时清空。
+        readonly System.Collections.Generic.Stack<System.Action> popupBackStack = new();
         // 提示
         RectTransform tipRoot;
         Text tipText;
@@ -64,9 +68,7 @@ namespace LoopPark
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 10;
             var scaler = go.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1080, 1920);
-            scaler.matchWidthOrHeight = 0.2f;
+            UIKit.ScaleForDesign(scaler);
             canvasRect = (RectTransform)go.transform;
 
             if (FindAnyObjectByType<EventSystem>() == null)
@@ -85,6 +87,7 @@ namespace LoopPark
                 ShowTip("当前版本缺少主页，请更新游戏", 2f);
                 return;
             }
+            popupBackStack.Clear();
             CloseModal();
             game.Cleanup();
             tutorial.Stop();
@@ -98,7 +101,13 @@ namespace LoopPark
             var d = SaveSystem.D;
             if (hudCoins) hudCoins.text = d.coins.ToString();
             for (int i = 0; i < 3; i++)
-                if (boosterCounts[i]) boosterCounts[i].text = d.boosters[i] > 0 ? d.boosters[i].ToString() : "+";
+            {
+                if (!boosterCounts[i]) continue;
+                bool hasStock = d.boosters[i] > 0;
+                boosterCounts[i].text = hasStock ? d.boosters[i].ToString() : "";
+                if (boosterBadges.Length == 3) boosterBadges[i].sprite = hasStock ? availableBadge : buyBadge;
+                else if (!hasStock) boosterCounts[i].text = "+";
+            }
         }
 
         void Update()
@@ -116,6 +125,8 @@ namespace LoopPark
         public void StartLevel(int n)
         {
             n = Mathf.Clamp(n, 1, LevelRepository.MaxLevel);
+            // 新关卡开始后，旧弹窗链路不再属于当前流程。
+            popupBackStack.Clear();
             CloseModal();
             HideTip();
             HideHand();
@@ -125,7 +136,7 @@ namespace LoopPark
             game.StartLevel(data);
             EventTrack.LevelStart(n, data.difficulty, data.TotalCars());
             EventTrack.UeShow("game");
-            hudLevel.text = $"第 {n} 关";
+            hudLevel.text = $"Level {n}";
             hudDiffBg.gameObject.SetActive(data.difficulty > 0);
             hudDiff.text = data.difficulty == 2 ? "超难" : "困难";
             hudDiffBg.color = data.difficulty == 2 ? new Color(0.6f, 0.25f, 0.85f) : new Color(0.9f, 0.25f, 0.3f);
@@ -138,7 +149,13 @@ namespace LoopPark
         // ===================================================================
         void BuildHud()
         {
-            var prefab = Resources.Load<GameObject>("UI/GameHUD");
+            const string hudPrefabPath = "UI/GameHUD_P";
+            var prefab = Resources.Load<GameObject>(hudPrefabPath);
+            if (!prefab)
+            {
+                Debug.LogError($"[LoopPark] Missing HUD prefab at Resources/{hudPrefabPath}.");
+                return;
+            }
             hud = Instantiate(prefab, canvasRect);
             UIKit.Stretch((RectTransform)hud.transform);
             var view = hud.GetComponent<HudView>();
@@ -146,13 +163,16 @@ namespace LoopPark
             hudCoins = view.coins;
             hudDiff = view.difficulty;
             hudDiffBg = view.difficultyBackground;
-            view.settingsButton.onClick.AddListener(() => { Sfx.Play("button"); ShowPause(); });
+            boosterBadges = view.boosterBadges ?? System.Array.Empty<Image>();
+            availableBadge = UIKit.Art("home_btn_ pause (1)");
+            buyBadge = UIKit.Art("home_btn_ pause");
+            view.settingsButton.onClick.AddListener(() => { Sfx.Play("button"); ShowExitPrompt(); });
             if (GMEnabled)
             {
                 var gm = UIKit.Btn(hud.transform, "GM", new Color(0.2f, 0.22f, 0.32f), ShowGM, 36);
                 var rt = (RectTransform)gm.transform;
                 rt.anchorMin = rt.anchorMax = new Vector2(1, 1);
-                rt.anchoredPosition = new Vector2(-90, -80);
+                rt.anchoredPosition = new Vector2(-90, -373);
                 rt.sizeDelta = new Vector2(120, 64);
             }
             for (int i = 0; i < 3; i++)
@@ -190,29 +210,70 @@ namespace LoopPark
         // ===================================================================
         void CloseModal()
         {
-            if (modal != null) Destroy(modal);
+            if (modal != null)
+            {
+                modal.SetActive(false);
+                Destroy(modal);
+            }
             modal = null;
             if (game != null) game.Paused = false;
         }
 
-        RectTransform OpenModal(string title, Color head, float height)
+        PopupView OpenPopup(string title, string message, Sprite icon, string amount,
+            string label, System.Action action, System.Action close, int? price = null,
+            PopupTemplate template = PopupTemplate.Y1)
+        {
+            var popup = PopupView.Create(canvasRect, title, message, icon, amount, label, action, close,
+                price, SaveSystem.D.coins, template);
+            if (!popup) return null;
+            CloseModal();
+            modal = popup.gameObject;
+            game.Paused = true;
+            return popup;
+        }
+
+        void AdoptPopup(PopupView popup)
+        {
+            if (!popup) return;
+            CloseModal();
+            modal = popup.gameObject;
+            game.Paused = true;
+        }
+
+        RectTransform OpenModal(string title, Color head, float height, bool transparentCard = false, bool dismissible = true)
         {
             CloseModal();
             var card = UIKit.Modal(canvasRect, "Modal", height, out modal);
-            UIKit.Title(card, title, head);
+            if (transparentCard)
+                card.GetComponent<Image>().enabled = false;
+            else
+            {
+                UIKit.Title(card, title, head);
+                if (dismissible)
+                {
+                    var close = UIKit.Btn(card, "×", Color.white, CloseModal, 64);
+                    UIKit.Paint(close, "home_btn_ pause (1)");
+                    UIKit.Place((RectTransform)close.transform, Vector2.one, new Vector2(-62, -42), new Vector2(108, 108));
+                }
+            }
             return card;
         }
 
         Text Body(RectTransform card, string text, float y, int size = 46, float h = 200)
         {
-            var t = UIKit.Txt(card, text, size, new Color(0.3f, 0.25f, 0.2f));
-            UIKit.Place(t.rectTransform, new Vector2(0.5f, 1), new Vector2(0, y), new Vector2(780, h));
+            var background = UIKit.Img(card, "Message", Color.white, UIKit.Art("Rectangle 630"));
+            background.raycastTarget = false;
+            UIKit.Place(background.rectTransform, new Vector2(0.5f, 1), new Vector2(0, y), new Vector2(792, h + 24));
+            var t = UIKit.Txt(background.transform, text, size, new Color(.37f, .15f, .07f));
+            UIKit.Stretch(t.rectTransform);
             return t;
         }
 
         Button ModalBtn(RectTransform card, string label, Color c, System.Action a, float y, float w = 620)
         {
             var b = UIKit.Btn(card, label, c, a, 52);
+            var skin = SkinConfig.Instance;
+            UIKit.Paint(b, c == skin.dangerButton ? "common_btn_green (2)" : c == skin.primaryButton ? "common_btn_green (1)" : "common_btn_yellow");
             UIKit.Place((RectTransform)b.transform, new Vector2(0.5f, 0), new Vector2(0, y), new Vector2(w, 140));
             return b;
         }
@@ -220,21 +281,118 @@ namespace LoopPark
         void ShowPause()
         {
             if (game.Ended) return;
-            var card = OpenModal("暂停", new Color(0.35f, 0.45f, 0.75f), 860);
+            var d = SaveSystem.D;
+            var card = OpenModal("Setting", new Color(0.35f, 0.45f, 0.75f), 1500);
             game.Paused = true;
-            Body(card, "退出或重新开始会消耗 1 点体力", -210, 40, 120);
-            ModalBtn(card, "继续游戏", SkinConfig.Instance.primaryButton, CloseModal, 470);
-            ModalBtn(card, "重新开始", SkinConfig.Instance.secondaryButton, () =>
+
+            var band = UIKit.Img(card, "AudioBand", Color.white, UIKit.Art("Rectangle 631"));
+            UIKit.Place(band.rectTransform, new Vector2(.5f, .5f), new Vector2(0, 285), new Vector2(792, 260));
+            var music = UIKit.Btn(card, "", Color.white, () => TogglePauseSetting(0));
+            var sound = UIKit.Btn(card, "", Color.white, () => TogglePauseSetting(1));
+            var vibration = UIKit.Btn(card, "", Color.white, () => TogglePauseSetting(2));
+            UIKit.Paint(music, "setting_btn_bgm");
+            UIKit.Paint(sound, "setting_btn_sound");
+            UIKit.Paint(vibration, "setting_btn_shock");
+            music.image.color = d.music ? Color.white : Color.gray;
+            sound.image.color = d.sound ? Color.white : Color.gray;
+            vibration.image.color = d.vibrate ? Color.white : Color.gray;
+            UIKit.Place((RectTransform)music.transform, new Vector2(.5f, .5f), new Vector2(-250, 285), new Vector2(176, 176));
+            UIKit.Place((RectTransform)sound.transform, new Vector2(.5f, .5f), new Vector2(0, 285), new Vector2(176, 176));
+            UIKit.Place((RectTransform)vibration.transform, new Vector2(.5f, .5f), new Vector2(250, 285), new Vector2(176, 176));
+            ModalBtn(card, "Contact us", SkinConfig.Instance.secondaryButton, () => Application.OpenURL("mailto:support@looppark.game?subject=LoopPark%20Support"), 760);
+
+            var language = ModalBtn(card, string.IsNullOrEmpty(d.language) ? "English" : d.language, SkinConfig.Instance.primaryButton, null, 500, 624);
+            var languageIcon = UIKit.Img(language.transform, "LanguageIcon", Color.white, UIKit.Art("icon_language"), false);
+            UIKit.Place(languageIcon.rectTransform, new Vector2(.5f, .5f), new Vector2(-218, 0), new Vector2(70, 74));
+            var languageArrow = UIKit.Img(language.transform, "LanguageArrow", Color.white, UIKit.Art("setting_btn_Down"), false);
+            UIKit.Place(languageArrow.rectTransform, new Vector2(1, .5f), new Vector2(-80, 0), new Vector2(58, 48));
+            var menu = UIKit.Img(card, "LanguageMenu", Color.white, UIKit.Art("Rectangle 630"));
+            UIKit.Place(menu.rectTransform, new Vector2(.5f, .5f), new Vector2(0, -485), new Vector2(520, 430));
+            menu.gameObject.SetActive(false);
+            var languageNames = new[] { "English", "Français", "Deutsch", "Italiano", "日本語" };
+            for (int i = 0; i < languageNames.Length; i++)
             {
-                SaveSystem.LoseLife();
-                if (SaveSystem.D.lives <= 0) { ShowHome(); ShowNoLives(); }
-                else StartLevel(currentLevel);
-            }, 300);
-            ModalBtn(card, "回到主页", SkinConfig.Instance.dangerButton, () =>
+                int index = i;
+                var option = UIKit.Btn(menu.transform, languageNames[i], new Color(1, 1, 1, .001f), () =>
+                {
+                    d.language = languageNames[index];
+                    SaveSystem.Save();
+                    ShowPause();
+                }, 30);
+                UIKit.Label(option).color = new Color(.25f, .25f, .35f);
+                UIKit.Place((RectTransform)option.transform, new Vector2(.5f, .5f), new Vector2(0, 155 - i * 78), new Vector2(440, 68));
+            }
+            language.onClick.AddListener(() => menu.gameObject.SetActive(!menu.gameObject.activeSelf));
+
+            var meta = UIKit.Txt(card, $"UID:{SystemInfo.deviceUniqueIdentifier.GetHashCode():X6}\nversion {Application.version}", 34, new Color(.75f, .82f, 1f), TextAnchor.MiddleCenter);
+            UIKit.Place(meta.rectTransform, new Vector2(.5f, 0), new Vector2(0, 270), new Vector2(600, 130));
+            var privacy = ModalBtn(card, "Privacy Policy", new Color(.45f, .62f, .95f), () => Application.OpenURL("mailto:support@looppark.game?subject=Privacy%20Policy"), 145, 420);
+            var leave = ModalBtn(card, "退出关卡", SkinConfig.Instance.dangerButton, () =>
             {
-                SaveSystem.LoseLife();
-                ShowHome();
-            }, 130);
+                PushPopupBack(ShowPause);
+                ConfirmLeave(() =>
+                {
+                    SaveSystem.LoseLife();
+                    ShowHome();
+                });
+            }, 145, 420);
+            ((RectTransform)privacy.transform).anchoredPosition += Vector2.left * 220;
+            ((RectTransform)leave.transform).anchoredPosition += Vector2.right * 220;
+        }
+
+        void TogglePauseSetting(int setting)
+        {
+            if (setting == 0) SaveSystem.D.music = !SaveSystem.D.music;
+            else if (setting == 1) SaveSystem.D.sound = !SaveSystem.D.sound;
+            else SaveSystem.D.vibrate = !SaveSystem.D.vibrate;
+            SaveSystem.Save();
+            ShowPause();
+        }
+
+        void PushPopupBack(System.Action previous)
+        {
+            if (previous != null) popupBackStack.Push(previous);
+        }
+
+        System.Action PopPopupBack()
+        {
+            return popupBackStack.Count > 0 ? popupBackStack.Pop() : null;
+        }
+
+        void GoBackPopup()
+        {
+            // 只有真正点击返回按钮时才弹出上一页，避免打开页面时提前消耗栈记录。
+            var previous = PopPopupBack();
+            if (previous != null) previous();
+            else CloseModal();
+        }
+
+        void ShowExitPrompt()
+        {
+            OpenPopup($"Level {currentLevel}", "Level Failed", UIKit.Art("icon_heart_1"), "-1",
+                "Quit", () =>
+                {
+                    PushPopupBack(ShowExitPrompt);
+                    ConfirmLeave(() =>
+                    {
+                        SaveSystem.LoseLife();
+                        ShowHome();
+                    });
+                }, () =>
+                {
+                    PushPopupBack(ShowExitPrompt);
+                    ConfirmLeave(() =>
+                    {
+                        SaveSystem.LoseLife();
+                        ShowHome();
+                    });
+                }, null, PopupTemplate.Y3);
+        }
+
+        void ConfirmLeave(System.Action leave)
+        {
+            OpenPopup("Are You Sure?", "You will lose 1 life!", null, "",
+                "Quit", leave, GoBackPopup, null, PopupTemplate.Y2);
         }
 
         void OnWin()
@@ -249,29 +407,45 @@ namespace LoopPark
             d.coins += reward;
             SaveSystem.Save();
 
-            var card = OpenModal(currentLevel == LevelRepository.MaxLevel ? "全部通关！" : "关卡完成！", new Color(0.98f, 0.66f, 0.15f), 820);
-            var coin = UIKit.Img(card, "Coin", new Color(1f, 0.8f, 0.2f), SpriteFactory.Circle(), false);
-            UIKit.Place(coin.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -280), new Vector2(170, 170));
-            coin.gameObject.AddComponent<Breath>();
-            var ct = UIKit.Txt(coin.transform, "$", 90, Color.white, TextAnchor.MiddleCenter, true);
-            UIKit.Stretch(ct.rectTransform);
-            Body(card, $"+{reward} 金币", -420, 64, 100);
-            Button doubleBtn = null;
-            doubleBtn = ModalBtn(card, $"双倍领取 +{reward}（广告）", SkinConfig.Instance.secondaryButton, () =>
-            {
-                Ads.Service.ShowRewarded(ok =>
-                {
-                    if (ok) SaveSystem.AddCoins(reward);
-                    doubleBtn.interactable = false;
-                    ShowTip(ok ? $"额外获得 {reward} 金币" : "广告未完成", 1.5f);
-                }, "win_double_coins", currentLevel);
-            }, 280);
-            ModalBtn(card, currentLevel == LevelRepository.MaxLevel ? "返回主页" : "继续", SkinConfig.Instance.primaryButton, () =>
-            {
-                ShowHome();
-            }, 110);
-            FxBurstUI(card);
+            OpenSettlementModal(reward);
             SdkIntegration.TryShowInterstitial(currentLevel, "level_win");
+        }
+
+        void OpenSettlementModal(int reward)
+        {
+            const string prefabPath = "UI/Modal";
+            var prefab = Resources.Load<GameObject>(prefabPath);
+            if (!prefab)
+            {
+                Debug.LogError($"[LoopPark] Missing settlement modal prefab at Resources/{prefabPath}.");
+                return;
+            }
+
+            CloseModal();
+            modal = Instantiate(prefab, canvasRect, false);
+            UIKit.Stretch((RectTransform)modal.transform);
+            game.Paused = true;
+
+            var view = modal.AddComponent<SettlementModalView>();
+            var doubleLabel = $"双倍领取 +{reward}（广告）";
+            var continueLabel = currentLevel == LevelRepository.MaxLevel ? "返回主页" : "继续";
+            if (!view.Bind(reward, doubleLabel, continueLabel,
+                () =>
+                {
+                    Ads.Service.ShowRewarded(ok =>
+                    {
+                        if (ok) SaveSystem.AddCoins(reward);
+                        view.SetDoubleButtonInteractable(false);
+                        ShowTip(ok ? $"额外获得 {reward} 金币" : "广告未完成", 1.5f);
+                    }, "win_double_coins", currentLevel);
+                }, ShowHome))
+            {
+                CloseModal();
+                return;
+            }
+
+            var card = modal.transform.Find("Card") as RectTransform;
+            if (card) FxBurstUI(card);
         }
 
         void FxBurstUI(RectTransform card)
@@ -288,64 +462,34 @@ namespace LoopPark
         void OnFail()
         {
             HideHand();
-            if (game.LoopCount < game.LoopLimit) { OnDeadlock(); return; }
             EventTrack.UeShow("continue_slots");
-            var card = OpenModal("车位不够了！", SkinConfig.Instance.dangerButton, 980);
-            game.Paused = true;
-            // 示意图：+3
-            var plus = UIKit.Txt(card, $"+{Economy.ContinueSlots}", 120, new Color(0.95f, 0.55f, 0.1f), TextAnchor.MiddleCenter, true);
-            UIKit.Place(plus.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -270), new Vector2(400, 160));
-            Body(card, $"环路扩容 {Economy.ContinueSlots} 个车位，继续游戏", -400, 44, 100);
-            var payBtn = ModalBtn(card, $"继续（{Economy.ContinueCost} 金币）", SkinConfig.Instance.primaryButton, () =>
-            {
-                if (SaveSystem.Spend(Economy.ContinueCost))
-                {
-                    CloseModal();
-                    game.Continue(Economy.ContinueSlots);
-                }
-                else ShowTip("金币不足", 1.5f);
-            }, 470);
-            payBtn.interactable = SaveSystem.D.coins >= Economy.ContinueCost;
-            ModalBtn(card, "看广告继续", SkinConfig.Instance.secondaryButton, () =>
-            {
-                Ads.Service.ShowRewarded(ok =>
-                {
-                    if (!ok) return;
-                    CloseModal();
-                    game.Continue(Economy.ContinueSlots);
-                }, "continue_slots", currentLevel);
-            }, 300);
-            ModalBtn(card, "放弃", new Color(0.6f, 0.6f, 0.65f), ShowLose, 130, 420);
+            popupBackStack.Clear();
+            PushPopupBack(ShowExitPrompt);
+            if (SaveSystem.D.lives <= 0) ShowNoLives(ShowRevive);
+            else ShowRevive();
         }
 
-        /// <summary>环路没满但已无路可走（车道发完、各列互相卡住）：提供洗牌继续。</summary>
-        void OnDeadlock()
+        void ShowRevive()
         {
-            EventTrack.UeShow("deadlock_shuffle");
-            var card = OpenModal("无路可走了！", SkinConfig.Instance.dangerButton, 980);
-            game.Paused = true;
-            var icon = UIKit.Txt(card, "?", 120, new Color(0.3f, 0.6f, 0.95f), TextAnchor.MiddleCenter, true);
-            UIKit.Place(icon.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -270), new Vector2(400, 160));
-            Body(card, "把停车列里的车按颜色整理好，继续游戏", -400, 44, 100);
-            int cost = Economy.BoosterPrice[(int)Booster.Shuffle];
-            var payBtn = ModalBtn(card, $"整理继续（{cost} 金币）", SkinConfig.Instance.primaryButton, () =>
-            {
-                if (SaveSystem.Spend(cost)) ShuffleContinue();
-                else ShowTip("金币不足", 1.5f);
-            }, 470);
-            payBtn.interactable = SaveSystem.D.coins >= cost;
-            ModalBtn(card, "看广告整理", SkinConfig.Instance.secondaryButton, () =>
-            {
-                Ads.Service.ShowRewarded(ok => { if (ok) ShuffleContinue(); }, "deadlock_shuffle", currentLevel);
-            }, 300);
-            ModalBtn(card, "放弃", new Color(0.6f, 0.6f, 0.65f), ShowLose, 130, 420);
-        }
+            PopupView popup = null;
+            popup = OpenPopup("Out of Space!", $"Extra {Economy.ContinueSlots} parking lot to keep playing",
+                UIKit.Art("icon_add cart"), $"+{Economy.ContinueSlots}", "Play On", Pay,
+                GoBackPopup, Economy.ContinueCost, PopupTemplate.Y5);
+            if (!popup) return;
 
-        void ShuffleContinue()
-        {
-            CloseModal();
-            game.Continue(0);
-            game.RescueSort();
+            void Pay()
+            {
+                if (SaveSystem.Spend(Economy.ContinueCost)) Resume();
+                else popup.SetMessage("Not enough coins");
+            }
+
+            void Resume()
+            {
+                // 继续游戏后，失败流程已结束，不能把旧页面留给下一次弹窗。
+                popupBackStack.Clear();
+                CloseModal();
+                game.Continue(Economy.ContinueSlots);
+            }
         }
 
         void ShowLose()
@@ -354,64 +498,62 @@ namespace LoopPark
             EventTrack.UeShow("level_fail");
             SaveSystem.LoseLife();
             SdkIntegration.TryShowInterstitial(currentLevel, "level_fail");
-            var card = OpenModal("关卡失败", new Color(0.5f, 0.5f, 0.6f), 700);
-            game.Paused = true;
-            Body(card, $"体力 -1（剩余 {SaveSystem.D.lives}）", -230, 46, 100);
-            ModalBtn(card, "重试", SkinConfig.Instance.primaryButton, () =>
+            var popup = OpenPopup($"Level {currentLevel}", $"Level failed ({SaveSystem.D.lives} stamina left)",
+                UIKit.Art("icon_heart_1"), "-1", "Retry", () =>
             {
-                if (SaveSystem.D.lives <= 0) { ShowHome(); ShowNoLives(); }
+                if (SaveSystem.D.lives <= 0) ShowHome();
                 else StartLevel(currentLevel);
-            }, 270);
-            ModalBtn(card, "回到主页", SkinConfig.Instance.secondaryButton, ShowHome, 100);
+            }, null);
+            if (popup) popup.AddSecondary("Back to Home", ShowHome);
         }
 
-        void ShowNoLives()
+        void ShowNoLives(System.Action onRefilled)
         {
-            var card = OpenModal("体力不足", SkinConfig.Instance.dangerButton, 760);
-            int sec = SaveSystem.SecondsToNextLife();
-            Body(card, $"{sec / 60} 分钟后恢复 1 点体力\n也可以立即补满", -250, 44, 160);
-            ModalBtn(card, $"补满体力（{Economy.RefillLivesCost} 金币）", SkinConfig.Instance.primaryButton, () =>
+            PopupView popup = null;
+            popup = OpenPopup("More Lives?", "Get more lives to continue playing", null,
+                SaveSystem.D.lives.ToString(), "Refill Lives", () =>
             {
                 if (SaveSystem.Spend(Economy.RefillLivesCost))
                 {
                     SaveSystem.D.lives = Economy.MaxLives;
                     SaveSystem.Save();
-                    CloseModal();
+                    onRefilled?.Invoke();
                 }
-                else ShowTip("金币不足", 1.5f);
-            }, 290);
-            ModalBtn(card, "关闭", new Color(0.6f, 0.6f, 0.65f), CloseModal, 120, 420);
+                else popup.SetMessage("Not enough coins");
+            }, GoBackPopup, Economy.RefillLivesCost, PopupTemplate.Y4);
+            if (!popup) return;
+
+            popup.SetSecondary("Get", () =>
+            {
+                Ads.Service.ShowRewarded(ok =>
+                {
+                    if (!popup || !popup.isActiveAndEnabled) return;
+                    if (ok)
+                    {
+                        SaveSystem.D.lives = Mathf.Min(Economy.MaxLives, SaveSystem.D.lives + 1);
+                        SaveSystem.Save();
+                        onRefilled?.Invoke();
+                    }
+                    else popup.SetMessage("The ad did not finish, please try again");
+                }, "refill_life", currentLevel);
+            }, "+1");
         }
 
         void ShowBuyBooster(Booster b)
         {
-            int i = (int)b;
-            bool inGame = hud.activeSelf;
-            var card = OpenModal(Economy.BoosterName[i], new Color(0.3f, 0.6f, 0.95f), 700);
-            if (inGame) game.Paused = true;
-            Body(card, Economy.BoosterDesc[i], -240, 44, 140);
-            ModalBtn(card, $"购买 x1（{Economy.BoosterPrice[i]} 金币）", SkinConfig.Instance.primaryButton, () =>
-            {
-                if (SaveSystem.Spend(Economy.BoosterPrice[i]))
-                {
-                    SaveSystem.D.boosters[i]++;
-                    SaveSystem.Save();
-                    CloseModal();
-                }
-                else ShowTip("金币不足", 1.5f);
-            }, 270);
-            ModalBtn(card, "关闭", new Color(0.6f, 0.6f, 0.65f), CloseModal, 100, 420);
+            var popup = BoosterPurchasePopup.Open(canvasRect, b, CloseModal);
+            AdoptPopup(popup);
         }
 
         void ShowShop()
         {
-            var card = OpenModal("商店", new Color(0.3f, 0.6f, 0.95f), 1150);
+            var card = OpenModal("Store", new Color(0.3f, 0.6f, 0.95f), 1150);
             for (int i = 0; i < 3; i++)
             {
                 int idx = i;
                 var row = UIKit.Img(card, "Row", new Color(1, 1, 1, 0.7f), UIKit.FlatRound);
                 UIKit.Place(row.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -260 - i * 230), new Vector2(800, 200));
-                var name = UIKit.Txt(row.transform, $"{Economy.BoosterName[i]}  （拥有 {SaveSystem.D.boosters[i]}）", 44, new Color(0.25f, 0.2f, 0.2f), TextAnchor.MiddleLeft);
+                var name = UIKit.Txt(row.transform, $"{Economy.BoosterName[i]}  （have {SaveSystem.D.boosters[i]}）", 44, new Color(0.25f, 0.2f, 0.2f), TextAnchor.MiddleLeft);
                 UIKit.Place(name.rectTransform, new Vector2(0, 0.5f), new Vector2(250, 30), new Vector2(460, 70));
                 var desc = UIKit.Txt(row.transform, Economy.BoosterDesc[i], 32, new Color(0.4f, 0.35f, 0.3f), TextAnchor.MiddleLeft);
                 UIKit.Place(desc.rectTransform, new Vector2(0, 0.5f), new Vector2(250, -40), new Vector2(460, 60));
@@ -423,11 +565,11 @@ namespace LoopPark
                         SaveSystem.Save();
                         ShowShop();
                     }
-                    else ShowTip("金币不足", 1.5f);
+                    else ShowTip("Not enough coins", 1.5f);
                 }, 44);
                 UIKit.Place((RectTransform)buy.transform, new Vector2(1, 0.5f), new Vector2(-130, 0), new Vector2(220, 120));
             }
-            ModalBtn(card, "关闭", new Color(0.6f, 0.6f, 0.65f), CloseModal, 90, 420);
+            ModalBtn(card, "Close", new Color(0.6f, 0.6f, 0.65f), CloseModal, 90, 420);
         }
 
         // ===================================================================
@@ -514,32 +656,6 @@ namespace LoopPark
             SaveSystem.D.lives = Economy.MaxLives; SaveSystem.Save();
             Debug.Log($"[GMTEST] after add coins={SaveSystem.D.coins} boosters={string.Join(",", SaveSystem.D.boosters)} lives={SaveSystem.D.lives}");
             ShowHome();
-        }
-
-        void ShowSettings()
-        {
-            var card = OpenModal("设置", new Color(0.4f, 0.45f, 0.6f), 950);
-            var d = SaveSystem.D;
-            ModalBtn(card, d.sound ? "音效：开" : "音效：关", SkinConfig.Instance.secondaryButton, () =>
-            {
-                d.sound = !d.sound;
-                SaveSystem.Save();
-                ShowSettings();
-            }, 600);
-            ModalBtn(card, d.vibrate ? "震动：开" : "震动：关", SkinConfig.Instance.secondaryButton, () =>
-            {
-                d.vibrate = !d.vibrate;
-                SaveSystem.Save();
-                ShowSettings();
-            }, 440);
-            ModalBtn(card, "重置进度", SkinConfig.Instance.dangerButton, () =>
-            {
-                var c2 = OpenModal("确认重置？", SkinConfig.Instance.dangerButton, 600);
-                Body(c2, "关卡、金币、道具将全部清空", -230, 44, 100);
-                ModalBtn(c2, "确认重置", SkinConfig.Instance.dangerButton, () => { SaveSystem.Reset(); ShowHome(); }, 250);
-                ModalBtn(c2, "取消", new Color(0.6f, 0.6f, 0.65f), CloseModal, 90, 420);
-            }, 280);
-            ModalBtn(card, "关闭", new Color(0.6f, 0.6f, 0.65f), CloseModal, 110, 420);
         }
 
         // ===================================================================

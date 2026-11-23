@@ -37,8 +37,10 @@ MonoBehaviour:
   - {r: 0.68235296, g: 0.59411764, b: 0.3382353, a: 1}
   - {r: 0, g: 0.4147059, b: 0.7411765, a: 1}
   hiddenCarColor: {r: 0.45, g: 0.34, b: 0.8, a: 1}
-  carViewTilt: 45
-  carModelScale: {x: 1.55, y: 1.3}
+  carViewTilt: 54
+  departureCarViewTilt: 55
+  carViewTiltTransitionTime: 0.65
+  carModelScale: {x: 1.55, y: 1.3, z: 1.3}
   carKeyLightIntensity: 1.1
   carKeyLightDirection: {x: 0.35, y: -1.4, z: 1}
   carAmbientLight: {r: 0.3, g: 0.3, b: 0.34, a: 1}
@@ -392,6 +394,10 @@ MonoBehaviour:
   carAppearanceVersion: 2
   brakeStrength: 300
   idleShake: 1.2
+  idleExhaustFx: {fileID: 4894824818352341308, guid: e49b613cc1e69914bafa7781243134e2, type: 3}
+  tireTrailFx: {fileID: 7625733484899735407, guid: 07fb40134429dbc47b3a0530de8551e1, type: 3}
+  accelerationFx: {fileID: 5978554064619182421, guid: bd1205e23aa45ae4b91612479869c742, type: 3}
+  sparkFx: {fileID: 825222062341967474, guid: 7b3cb591d0e3550468e7fc582022c4ee, type: 3}
   exhaustSprite: {fileID: 0}
   exhaustColor: {r: 1, g: 1, b: 1, a: 0.9}
   exhaustOffset: {x: 0.24, y: -0.5}

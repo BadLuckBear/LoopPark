@@ -11,13 +11,13 @@ namespace LoopPark
     ///     车列为空 → 只有在场上没有顶部同色的列时才驶入（避免同色车被拆散）。
     ///     实际游戏里车从右往左依次经过车列入口，所以这里取“最右侧可进入的列”。
     ///  3. 驶入已满的列 → 最下方的车被挤出，回到环路。
-    ///  4. 列内 capacity 辆车同色 → 消除；普通列清空后可再次使用，栅栏列关闭。
+    ///  4. 列内达到实际列深度的同色车辆 → 消除；普通列清空后可再次使用，锁定竖列关闭。
     ///  5. 绑带车：两辆都在队首才能一起发车。
     ///  6. 钥匙锁：带钥匙的车离开车列（挤出或消除）时钥匙进入钥匙栈；
     ///     上锁的车排到队首时自动消耗一把钥匙开锁，没开锁前不能发车。
     ///  7. 帘子：被帘子盖住的列不能进车；每消除一辆帘子颜色的车，帘子数字 -1，归零后打开。
     ///  8. 彩色车道：只收该颜色；该颜色被预留，不能进普通空列。
-    ///  9. 车库：盖住整列；某颜色的列消除时，锁色相同的车库打开。
+    ///  9. 集装箱：盖住整列；某颜色的列消除时，同色集装箱全部打开。没有颜色的提取栅栏在任意一次消除后打开。
     /// 10. 冰车道：不能进车；任意一列消除，其它冰车道冰层 -1，归零后可用。
     /// 11. 电梯：列被消除后，下一层整列升上来。
     /// 12. 全部车辆消除 → 胜利；无车可发且环路上没有车能进列 → 失败。
@@ -28,12 +28,13 @@ namespace LoopPark
         public static int Col(int v) => v % KeyBit;
         public static bool HasKey(int v) => v >= KeyBit;
 
-        public int cap, limit;
+        public int cap, slotCap, limit;
         public List<int>[] cols;          // 颜色 (+100 表示带钥匙)
         public bool[] fence, closed;
         public int[] curtainColor, curtainLeft; // curtainLeft > 0 表示被帘子盖住
         public int[] laneColor;                 // 彩色车道颜色，-1 = 普通
-        public int[] garageColor;               // 车库锁色，-1 = 无车库/已打开
+        public int[] garageColor;               // 集装箱锁色，-1 = 无颜色/已打开
+        public bool[] garageAnyColor;           // 提取栅栏未记录颜色时，任意一次消除即可打开
         public int[] ice;                       // 冰层数
         public List<int>[][] levels;            // 电梯：剩余楼层（每层一组车）
         public int[] levelIdx;
@@ -49,7 +50,9 @@ namespace LoopPark
 
         public static PuzzleSim From(LevelData d)
         {
-            var s = new PuzzleSim { cap = d.capacity, limit = d.loopLimit };
+            // cp is the number of matching cars removed at once. slotCapacity is the
+            // physical number of cars a column can hold before ejecting its bottom car.
+            var s = new PuzzleSim { cap = d.capacity, slotCap = d.EffectiveCapacity, limit = d.loopLimit };
             int n = d.columns.Count;
             s.cols = new List<int>[n];
             s.fence = new bool[n];
@@ -58,6 +61,7 @@ namespace LoopPark
             s.curtainLeft = new int[n];
             s.laneColor = new int[n];
             s.garageColor = new int[n];
+            s.garageAnyColor = new bool[n];
             s.ice = new int[n];
             s.levels = new List<int>[n][];
             s.levelIdx = new int[n];
@@ -66,11 +70,12 @@ namespace LoopPark
                 var cs = d.columns[i];
                 s.cols[i] = new List<int>();
                 foreach (var c in cs.cars) s.cols[i].Add(c.c + (c.k ? KeyBit : 0));
-                s.fence[i] = cs.fence;
+                s.fence[i] = cs.LocksAfterClear;
                 s.curtainColor[i] = cs.cc;
                 s.curtainLeft[i] = cs.cv;
                 s.laneColor[i] = cs.colored ? cs.lcol : -1;
-                s.garageColor[i] = cs.garage ? cs.gcol : -1;
+                s.garageAnyColor[i] = cs.IsContainer && cs.GetContainerColor() < 0;
+                s.garageColor[i] = cs.IsContainer ? cs.GetContainerColor() : -1;
                 s.ice[i] = cs.ice;
                 s.levels[i] = new List<int>[cs.levels.Count];
                 for (int k = 0; k < cs.levels.Count; k++)
@@ -111,6 +116,7 @@ namespace LoopPark
             s.closed = (bool[])closed.Clone();
             s.curtainLeft = (int[])curtainLeft.Clone();
             s.garageColor = (int[])garageColor.Clone();
+            s.garageAnyColor = (bool[])garageAnyColor.Clone();
             s.ice = (int[])ice.Clone();
             s.levelIdx = (int[])levelIdx.Clone();
             s.laneIdx = (int[])laneIdx.Clone();
@@ -121,7 +127,7 @@ namespace LoopPark
 
         public bool Won => remaining == 0;
 
-        public bool Covered(int j) => curtainLeft[j] > 0 || garageColor[j] >= 0 || ice[j] > 0;
+        public bool Covered(int j) => curtainLeft[j] > 0 || garageColor[j] >= 0 || garageAnyColor[j] || ice[j] > 0;
 
         /// <summary>该颜色是否被某条可用的彩色车道预留。</summary>
         public bool Reserved(int color)
@@ -211,7 +217,7 @@ namespace LoopPark
         }
 
         /// <returns>false = 出现死循环（车辆互相挤出无限循环）。</returns>
-        public bool Resolve()
+            public bool Resolve()
         {
             int guard = 0;
             bool progress = true;
@@ -238,22 +244,23 @@ namespace LoopPark
         {
             var c = cols[j];
             c.Add(color);
-            if (c.Count > cap)
+            if (c.Count > slotCap)
             {
                 int ej = c[0];
                 c.RemoveAt(0);
                 loop.Add(Col(ej));
                 if (HasKey(ej)) keys++;
             }
-            if (c.Count == cap)
+            if (c.Count >= cap)
             {
-                int c0 = Col(c[0]);
+                int first = c.Count - cap;
+                int c0 = Col(c[first]);
                 bool same = true;
-                for (int k = 1; k < c.Count; k++) if (Col(c[k]) != c0) { same = false; break; }
+                for (int k = first + 1; k < c.Count; k++) if (Col(c[k]) != c0) { same = false; break; }
                 if (same)
                 {
-                    foreach (var v in c) if (HasKey(v)) keys++;
-                    c.Clear();
+                    for (int k = first; k < c.Count; k++) if (HasKey(c[k])) keys++;
+                    c.RemoveRange(first, cap);
                     remaining -= cap;
                     clears++;
                     if (fence[j]) closed[j] = true;
@@ -261,11 +268,15 @@ namespace LoopPark
                     {
                         if (curtainLeft[m] > 0 && curtainColor[m] == c0)
                             curtainLeft[m] = Math.Max(0, curtainLeft[m] - cap);
-                        if (garageColor[m] == c0) garageColor[m] = -1;
+                        if (garageAnyColor[m] || garageColor[m] == c0)
+                        {
+                            garageAnyColor[m] = false;
+                            garageColor[m] = -1;
+                        }
                         if (m != j && ice[m] > 0) ice[m]--;
                     }
                     // 电梯：下一层升上来
-                    if (!closed[j] && levelIdx[j] < levels[j].Length)
+                    if (!closed[j] && c.Count == 0 && levelIdx[j] < levels[j].Length)
                     {
                         c.AddRange(levels[j][levelIdx[j]]);
                         levelIdx[j]++;
@@ -298,7 +309,7 @@ namespace LoopPark
             {
                 if (closed[j]) sb.Append('X');
                 if (curtainLeft[j] > 0) sb.Append('C').Append(curtainLeft[j]);
-                if (garageColor[j] >= 0) sb.Append('G');
+                if (garageColor[j] >= 0 || garageAnyColor[j]) sb.Append('G');
                 if (ice[j] > 0) sb.Append('I').Append(ice[j]);
                 if (levelIdx[j] > 0) sb.Append('E').Append(levelIdx[j]);
                 foreach (var c in cols[j]) sb.Append((char)('a' + Col(c))).Append(HasKey(c) ? "k" : "");

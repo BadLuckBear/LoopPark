@@ -12,5 +12,6 @@ namespace LoopPark
         public Button settingsButton;
         public Button[] boosterButtons;
         public Text[] boosterCounts;
+        public Image[] boosterBadges;
     }
 }

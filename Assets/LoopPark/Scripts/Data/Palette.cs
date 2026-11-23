@@ -2,29 +2,33 @@ using UnityEngine;
 
 namespace LoopPark
 {
-    /// <summary>车辆颜色表（可在 SkinConfig 中覆盖）。</summary>
+    /// <summary>车辆颜色表。颜色索引已经归一化为原始关卡颜色 1..15 对应的 0..14。</summary>
     public static class Palette
     {
+        public const int DarkGreen = 12;
+        public const int Beige = 13;
+        public const int SkyBlue = 14;
+
         public static readonly Color[] Default =
         {
-            Hex("F72529"), // 0 红
-            Hex("F1D21D"), // 1 黄
-            Hex("203AF0"), // 2 蓝
-            Hex("14CC16"), // 3 绿
-            Hex("8627F7"), // 4 紫
-            Hex("FF7510"), // 5 橙
-            Hex("FA78B4"), // 6 粉
-            Hex("53C8CA"), // 7 青
-            Hex("D7DCE6"), // 8 白
-            Hex("101217"), // 9 黑
-            Hex("984722"), // 10 棕
-            Hex("EF58E4"), // 11 洋红
-            Hex("18852D"), // 12 深绿
-            Hex("EBD18B"), // 13 米黄
-            Hex("008EFF"), // 14 天蓝
+            Hex("F8211F"), // 0 原始 1：红
+            Hex("E8D82A"), // 1 原始 2：黄
+            Hex("71E5E4"), // 2 原始 3：青绿
+            Hex("0788FA"), // 3 原始 4：浅蓝
+            Hex("3AE61D"), // 4 原始 5：绿
+            Hex("A6431B"), // 5 原始 6：棕
+            Hex("007121"), // 6 原始 7：淡紫/深绿
+            Hex("FE68FF"), // 7 原始 8：粉
+            Hex("EB7300"), // 8 原始 9：橙
+            Hex("353B48"), // 9 原始 10：黑
+            Hex("9355EE"), // 10 原始 11：紫
+            Hex("F06480"), // 11 原始 12：品红
+            Hex("B4C1BF"), // 12 原始 13：白
+            Hex("BAA05B"), // 13 原始 14：奶油
+            Hex("191BEE"), // 14 原始 15：蓝
         };
 
-        public static readonly string[] Names = { "红", "黄", "蓝", "绿", "紫", "橙", "粉", "青", "白", "黑", "棕", "洋红", "深绿", "米黄", "天蓝" };
+        public static readonly string[] Names = { "红", "黄", "青绿", "浅蓝", "绿", "棕", "淡紫", "粉", "橙", "黑", "紫", "品红", "白", "奶油", "蓝" };
 
         public static Color[] Colors
         {

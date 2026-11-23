@@ -14,6 +14,22 @@ namespace LoopPark
     {
         public static GameController I { get; private set; }
 
+        // Bootstrap provides the fallback scale for legacy levels without layout data.
+        float boardScale = 1f;
+        float fallbackBoardScale = 1f;
+        public float BoardScale
+        {
+            get => boardScale;
+            set { boardScale = value; fallbackBoardScale = value; }
+        }
+        // The saved per-level position is applied to the generated board root.
+        public Vector2 BoardPosition { get; private set; }
+        // Separate per-level spacing multipliers for the upper parking area and lower departure area.
+        public float ParkingSpacing { get; private set; } = 1f;
+        public float DepartureSpacing { get; private set; } = 1f;
+        // Compatibility value for older editor integrations.
+        public float VehicleSpacing => ParkingSpacing;
+
         public LevelData Level { get; private set; }
         public int LoopLimit { get; private set; }
         public int LoopCount { get; private set; }
@@ -21,6 +37,8 @@ namespace LoopPark
         public bool Ended { get; private set; }
         public bool Paused { get; set; }
         public bool InputLocked { get; set; }
+        // Assigned by Bootstrap so the runtime-created controller can use the authored prefab.
+        public GameObject CarClearFx { private get; set; }
 
         /// <summary>新手引导：只允许点击该车道（-1 = 不限制）。</summary>
         public int TutorialLane = -1;
@@ -37,12 +55,23 @@ namespace LoopPark
         float cell, carW, laneW, colGap, pad, gateH;
         float lotW, lotH, lotCy;
         float[] colX, entryS;
+        // One cached sampled route per parking column keeps ejection motion stable across frames.
+        (float start, float end, Vector3[] path, float distance)[] ejectionMerges;
         float colBottomY;
         float[] laneX;
-        float laneFrontY, laneStep, laneMinY;
+        float laneFrontY, laneStep, parkingStep, laneMinY;
         float loopSpeed, moveSpeed, spacing;
-        float ParkingSpeed => loopSpeed * 0.78f;
+        float ParkingSpeed => track.Length / 5.9f;
+        // Keep the stopping distance at cruise speed after shortening the lap.
+        float LoopBraking => moveSpeed * 2f;
         TrackPath track;
+
+        // All queue lanes converge on the single opening at the bottom of the loop.
+        float QueueEntranceS => track.SAtBottom(0f);
+        // The merge point is shared so every lane uses one reservation reference.
+        float QueueMergeS => QueueEntranceS;
+        // Keep the curb opening wide enough for the largest visible car.
+        float QueueEntranceGap => Mathf.Min(track.a - track.r, Mathf.Max(carW * 1.4f, cell * 0.95f));
 
         // ---------- 状态 ----------
         List<CarView>[] cols;
@@ -53,18 +82,16 @@ namespace LoopPark
         readonly List<CarView> queued = new List<CarView>();
         readonly List<CarView> allCars = new List<CarView>();
         readonly Dictionary<CarView, float> loopPositions = new Dictionary<CarView, float>();
-        readonly List<(CarView car, int column, float speed)> parkArrivals = new List<(CarView, int, float)>();
+        // Remaining time lets a car continue its parking path within the same logical frame.
+        readonly List<(CarView car, int column, float speed, float remainingTime)> parkArrivals = new List<(CarView, int, float, float)>();
         readonly Dictionary<CarView, float> loopSpeeds = new Dictionary<CarView, float>();
+        // 每辆车只在本关第一次进入首个弯道时播放一次火花。
+        readonly HashSet<CarView> turnSparkCars = new HashSet<CarView>();
+        // Each tuple is the frame-wide movement decision made before any car is mutated.
+        readonly List<(int leader, float gap, int target, float ahead, float speed, float step)> loopMoves = new();
         CarView mergingCar;
-        readonly Vector3[] departurePath = new Vector3[12];
+        readonly Vector3[] departurePath = new Vector3[24];
         float mergingS;
-
-        class Rope
-        {
-            public CarView a, b;
-            public SpriteRenderer ra, rb, outline;
-        }
-        readonly List<Rope> ropes = new List<Rope>();
 
         // 钥匙锁
         int keyStack;
@@ -76,8 +103,9 @@ namespace LoopPark
         TextMesh[] curtainText;
 
         public int KeyStack => keyStack;
-        // 彩色车道 / 车库 / 冰车道 / 电梯
+        // 彩色车道 / 集装箱 / 冰车道 / 电梯
         int[] laneColorOf, garageColorOf, iceLeft, levelIdx;
+        bool[] garageAnyColor;
         GameObject[] garageGo, iceGo;
         TextMesh[] iceText, elevatorText;
         GameObject[] elevatorPlate;
@@ -91,16 +119,20 @@ namespace LoopPark
 
         Transform root, carRoot, fxRoot;
         Mesh edgeMesh;
-        Color edgeColor;
+        // Reuse the curb color buffer so the full-loop pulse does not allocate every frame.
+        Color32[] edgeColors;
+        bool edgeWasFull;
         GameObject[] closedMarks;
         TextMesh counterText;
+        // Cache counter text values because only the loop count and limit change the label.
+        int counterLoopCount = -1, counterLoopLimit = -1;
         SpriteRenderer counterBg;
         float counterPunch;
 
         void Awake() => I = this;
 
         public bool Covered(int j) => curtainLeft != null &&
-            (curtainLeft[j] > 0 || garageColorOf[j] >= 0 || iceLeft[j] > 0);
+            (curtainLeft[j] > 0 || garageColorOf[j] >= 0 || garageAnyColor[j] || iceLeft[j] > 0);
 
         /// <summary>该颜色是否被某条可用的彩色车道预留。</summary>
         bool Reserved(int color)
@@ -125,7 +157,26 @@ namespace LoopPark
         {
             Cleanup();
             Level = d;
+            if (d.boardLayoutEnabled)
+            {
+                boardScale = Mathf.Clamp(d.boardScale, 0.5f, 2f);
+                BoardPosition = d.boardPosition;
+                float legacySpacing = Mathf.Clamp(d.vehicleSpacing, 0.6f, 1.5f);
+                ParkingSpacing = Mathf.Clamp(d.spacingSplitEnabled ? d.parkingSpacing : legacySpacing, 0.6f, 1.5f);
+                DepartureSpacing = Mathf.Clamp(d.spacingSplitEnabled ? d.departureSpacing : legacySpacing, 0.6f, 1.5f);
+            }
+            else
+            {
+                boardScale = fallbackBoardScale;
+                BoardPosition = Vector2.zero;
+                ParkingSpacing = 1f;
+                DepartureSpacing = 1f;
+            }
             LoopLimit = d.loopLimit;
+            // Reset visual caches whenever a new level rebuilds the board.
+            counterLoopCount = -1;
+            counterLoopLimit = -1;
+            counterPunch = 0f;
             Ended = false;
             Paused = false;
             InputLocked = false;
@@ -136,6 +187,7 @@ namespace LoopPark
 
             root = new GameObject("Board").transform;
             root.SetParent(transform, false);
+            root.localPosition = BoardPosition;
             carRoot = new GameObject("Cars").transform;
             carRoot.SetParent(root, false);
             fxRoot = new GameObject("Fx").transform;
@@ -145,6 +197,30 @@ namespace LoopPark
             BuildStatic();
             SpawnCars();
             RecountLoop();
+        }
+
+        /// <summary>
+        /// Applies a designer layout change by rebuilding the current level from its data.
+        /// Rebuilding keeps every generated visual using the same layout calculation.
+        /// </summary>
+        public void ApplyBoardLayout(float scale, Vector2 position) =>
+            ApplyBoardLayout(scale, position, ParkingSpacing, DepartureSpacing);
+
+        public void ApplyBoardLayout(float scale, Vector2 position, float vehicleSpacing) =>
+            ApplyBoardLayout(scale, position, vehicleSpacing, vehicleSpacing);
+
+        public void ApplyBoardLayout(float scale, Vector2 position, float parkingSpacing, float departureSpacing)
+        {
+            if (Level == null) return;
+            var data = Level.Clone();
+            data.boardLayoutEnabled = true;
+            data.boardScale = Mathf.Clamp(scale, 0.5f, 2f);
+            data.boardPosition = position;
+            data.spacingSplitEnabled = true;
+            data.parkingSpacing = Mathf.Clamp(parkingSpacing, 0.6f, 1.5f);
+            data.departureSpacing = Mathf.Clamp(departureSpacing, 0.6f, 1.5f);
+            data.vehicleSpacing = data.parkingSpacing;
+            StartLevel(data);
         }
 
         public void Cleanup()
@@ -159,7 +235,7 @@ namespace LoopPark
             loopPositions.Clear();
             parkArrivals.Clear();
             loopSpeeds.Clear();
-            ropes.Clear();
+            turnSparkCars.Clear();
             Level = null;
             Ended = true;
         }
@@ -181,55 +257,73 @@ namespace LoopPark
         {
             var cam = Camera.main;
             float H = cam.orthographicSize, W = H * cam.aspect;
-            int C = Level.columns.Count, cap = Level.capacity;
+            int C = Level.columns.Count, cap = Level.EffectiveCapacity;
 
-            float wU = C + (C - 1) * 0.14f + 0.44f;
-            float hU = cap + 0.64f + 0.44f;
-            float top = H - 2.0f, bottom = -H + 2.5f;
-            float avail = top - bottom;
-            cell = Mathf.Min(1.25f, (2 * W - 0.4f) / (wU + 2.66f), avail / (hU + 2.66f + 3.9f));
+            // Two-column boards use the wide reference spacing; four-column boards stay compact.
+            float gap = C <= 2 ? 1.4f : C >= 4 ? .72f : 1f;
+            const float padding = .38f, road = 2.5f;
+            float wU = C + (C - 1) * gap + 2 * padding;
+            // Match the reference composition: two-column boards sit lower and shorter,
+            // while four-column boards grow only enough to preserve the target margins.
+            float widthPx = (657f + 43.5f * C) * 0.965f;
+            // TrackPath adds the curb radius outside the nominal board rectangle, so compensate here.
+            float heightPx = (826f + 45.5f * C) * 0.96f;
+            float topInset = (611f - 57f * C) / Mathf.Max(0.9f, BoardScale);
+            float top = H - 2 * H * (topInset / UIKit.DesignSize.y);
+            // Scale only the board footprint; UI and queue anchors remain fixed.
+            float targetOuterWidth = 2 * W * (widthPx * BoardScale / UIKit.DesignSize.x);
+            float outerPerCell = wU + 2 * 1.2955f;
+            cell = targetOuterWidth / Mathf.Max(0.01f, outerPerCell);
+            cell = Mathf.Min(1.25f * BoardScale, cell);
+            float boardHeight = 2 * H * (heightPx * BoardScale / UIKit.DesignSize.y);
 
-            colGap = 0.14f * cell;
-            pad = 0.22f * cell;
+            colGap = gap * cell;
+            pad = padding * cell;
             gateH = 0.32f * cell;
             laneW = 1.15f * cell;
-            carW = 0.76f * cell;
+            carW = 0.96f * cell;
             lotW = wU * cell;
-            lotH = hU * cell;
+            lotH = boardHeight - road * cell;
             float margin = laneW / 2 + 0.1f * cell;
 
-            float blockH = (hU + 2.66f + 3.9f) * cell;
-            float blockTop = top - (avail - blockH) * 0.3f;
-            lotCy = blockTop - 1.33f * cell - lotH / 2;
+            lotCy = top - road * cell / 2 - lotH / 2;
 
-            track = new TrackPath(new Vector2(0, lotCy), lotW / 2 + margin, lotH / 2 + margin, cell * 1.0f);
-            loopSpeed = track.Length / 4.6f;
+            track = new TrackPath(new Vector2(0, lotCy), lotW / 2 + margin, lotH / 2 + margin,
+                Mathf.Min(cell * 1.38f, margin + pad + .16f * cell));
+            loopSpeed = track.Length / 3.25f;
             moveSpeed = 11f * cell;
-            spacing = cell * 1.5f;
+            spacing = cell * 1.5f * ParkingSpacing;
 
             colX = new float[C];
             entryS = new float[C];
+            ejectionMerges = new (float, float, Vector3[], float)[C];
+            colBottomY = lotCy - lotH / 2 + pad + gateH;
             for (int j = 0; j < C; j++)
             {
+                // Precompute the route used when a full column ejects its oldest car.
                 colX[j] = -lotW / 2 + pad + cell / 2 + j * (cell + colGap);
                 entryS[j] = track.SAtTop(colX[j] + 0.34f * cell);
+                float start = track.SAtBottom(colX[j]);
+                float end = track.SAtBottom(Mathf.Min(colX[j] + 0.75f * cell, track.a - track.r));
+                var path = new Vector3[departurePath.Length];
+                ejectionMerges[j] = (start, end, path, track.DeparturePath(SlotPos(j, 0), end, path));
             }
-            colBottomY = lotCy - lotH / 2 + pad + gateH;
 
             int L = Level.lanes.Count;
             laneX = new float[L];
             float maxHalf = track.a - track.r;
-            float step = L > 1 ? Mathf.Min(1.3f * cell, 2 * maxHalf * 0.95f / (L - 1)) : 0;
+            float step = L > 1 ? Mathf.Min(1.55f * cell, 2 * maxHalf * 0.95f / (L - 1)) : 0;
             for (int i = 0; i < L; i++) laneX[i] = (i - (L - 1) / 2f) * step;
-            laneFrontY = track.BottomY - laneW / 2 - 0.6f * cell - 0.5f * cell;
-            laneStep = cell * QueuedRowSpacing;
-            laneMinY = -H + 2.5f;
+            laneFrontY = H - 2 * H * (1855f / UIKit.DesignSize.y);
+            laneStep = cell * QueuedRowSpacing * DepartureSpacing;
+            parkingStep = cell * QueuedRowSpacing * ParkingSpacing;
+            laneMinY = -H + 2 * H * (300f / UIKit.DesignSize.y);
         }
 
         // 车位位置、围栏和机关共用整列高度，扩大行距后仍与车列对齐。
-        float ColumnHeight => Level.capacity * cell;
+        float ColumnHeight => lotH - 2 * (pad + gateH);
         Vector3 SlotPos(int j, int i) => new Vector3(colX[j], colBottomY + ColumnHeight * 0.5f
-            + (i - (Level.capacity - 1) * 0.5f) * cell * QueuedRowSpacing, 0);
+            + (i - (Level.EffectiveCapacity - 1) * 0.5f) * (ColumnHeight / Level.EffectiveCapacity) * QueuedRowSpacing * ParkingSpacing, 0);
         Vector3 LanePos(int l, int k) => new Vector3(laneX[l], laneFrontY - k * laneStep, 0);
         float ColTopY => colBottomY + ColumnHeight;
 
@@ -242,56 +336,41 @@ namespace LoopPark
         {
             var skin = SkinConfig.Instance;
             var cam = Camera.main;
-            cam.backgroundColor = skin.background;
+            cam.backgroundColor = BoardArtwork.Background;
             float H = cam.orthographicSize, W = H * cam.aspect;
 
-            if (skin.backgroundSprite != null)
+            float qTop = H - 2 * H * (1780f / UIKit.DesignSize.y);
+            float qHeight = qTop + H;
+            float queueHalf = Mathf.Abs(laneX[0]) + cell * .68f;
+            float grassWidth = W - queueHalf;
+            if (grassWidth > .1f)
             {
-                var bg = new GameObject("BG").AddComponent<SpriteRenderer>();
-                bg.transform.SetParent(root, false);
-                bg.sprite = skin.backgroundSprite;
-                bg.sortingOrder = -10;
-                var sz = skin.backgroundSprite.bounds.size;
-                float k = Mathf.Max(2 * W / sz.x, 2 * H / sz.y);
-                bg.transform.localScale = Vector3.one * k;
+                BoardArtwork.Piece(root, "GrassLeft", "road_grass_left", new Vector2(-W + grassWidth / 2, qTop - qHeight / 2), new Vector2(grassWidth, qHeight), -6);
+                BoardArtwork.Piece(root, "GrassRight", "road_grass_right", new Vector2(W - grassWidth / 2, qTop - qHeight / 2), new Vector2(grassWidth, qHeight), -6);
             }
+            for (int i = 1; i < laneX.Length; i++)
+                Quad("QueueLine", new Vector3((laneX[i - 1] + laneX[i]) / 2, qTop - qHeight / 2),
+                    new Vector2(.05f * cell, qHeight), new Color(1, 1, 1, .19f), -4);
 
-            // 发车区底板
-            float qTop = track.BottomY - laneW / 2 - 0.35f * cell;
-            float qBottom = -H - 1f;
-            var pad2 = ShapeMesh.RoundedRect("QueuePad", root, new Vector2(0, (qTop + qBottom) / 2),
-                new Vector2(Mathf.Min(W - 0.2f, Mathf.Abs(laneX.Length > 0 ? laneX[0] : 0) + cell * 1.1f), (qTop - qBottom) / 2), cell * 0.5f,
-                Color.Lerp(skin.background, skin.trackColor, 0.55f), -5);
-            for (int i = 0; i < laneX.Length; i++)
-            {
-                // 车道分隔虚线
-                if (i == 0) continue;
-                float x = (laneX[i - 1] + laneX[i]) / 2;
-                for (float y = qTop - 0.4f * cell; y > laneMinY - 2; y -= 0.6f * cell)
-                    Quad("dash", new Vector3(x, y), new Vector2(0.06f * cell, 0.3f * cell), new Color(1, 1, 1, 0.35f), -4);
-            }
-            // 两侧草坪装饰
-            float grassW = W - (Mathf.Abs(laneX.Length > 0 ? laneX[0] : 0) + cell * 1.1f) - 0.15f;
-            if (grassW > 0.3f)
-            {
-                ShapeMesh.RoundedRect("GrassL", root, new Vector2(-W + grassW / 2 - 0.3f, (qTop + qBottom) / 2), new Vector2(grassW / 2 + 0.3f, (qTop - qBottom) / 2), cell * 0.6f, skin.grassColor, -6);
-                ShapeMesh.RoundedRect("GrassR", root, new Vector2(W - grassW / 2 + 0.3f, (qTop + qBottom) / 2), new Vector2(grassW / 2 + 0.3f, (qTop - qBottom) / 2), cell * 0.6f, skin.grassColor, -6);
-            }
-
-            // 赛道：外沿（可变色） → 路面 → 停车场
-            float edge = 0.09f * cell;
-            var edgeGo = ShapeMesh.RoundedRect("TrackEdge", root, track.center, new Vector2(track.a + laneW / 2 + edge, track.b + laneW / 2 + edge), track.r + laneW / 2 + edge, skin.trackEdge, 0);
-            edgeMesh = edgeGo.GetComponent<MeshFilter>().sharedMesh;
-            edgeColor = skin.trackEdge;
-            ShapeMesh.RoundedRect("Track", root, track.center, new Vector2(track.a + laneW / 2, track.b + laneW / 2), track.r + laneW / 2, skin.trackColor, 1);
-            ShapeMesh.RoundedRect("InnerEdge", root, track.center, new Vector2(track.a - laneW / 2, track.b - laneW / 2), Mathf.Max(0.05f, track.r - laneW / 2), skin.trackEdge, 2);
-            ShapeMesh.RoundedRect("Lot", root, track.center, new Vector2(track.a - laneW / 2 - edge, track.b - laneW / 2 - edge), Mathf.Max(0.05f, track.r - laneW / 2 - edge), skin.lotColor, 3);
+            float edge = .13f * cell, outer = laneW / 2 + edge * .35f, inner = laneW / 2 + edge * .6f;
+            var half = new Vector2(track.a, track.b);
+            BoardArtwork.Ground(root, "Track", "road_asphalt", track.center, half + Vector2.one * outer, track.r + outer, 1);
+            BoardArtwork.Ground(root, "Lot", "road_lot", track.center, half - Vector2.one * inner, track.r - inner, 3);
+            // Adapt the opening to each level's vehicle and cell size.
+            float gap = QueueEntranceGap;
+            edgeMesh = BoardArtwork.Curb(root, "OuterCurb", track, outer, edge * 2, gap, track.Length - gap, 2);
+            edgeColors = edgeMesh.colors32;
+            edgeWasFull = false;
+            float start = track.a - track.r + track.r * Mathf.PI * .34f;
+            float side = 2 * (track.b - track.r) + track.r * Mathf.PI * .32f;
+            BoardArtwork.Curb(root, "InnerCurbRight", track, -inner, edge * 1.55f, start, start + side, 4, true);
+            BoardArtwork.Curb(root, "InnerCurbLeft", track, -inner, edge * 1.55f, start + track.Length / 2, start + side + track.Length / 2, 4, true);
 
             // 中心虚线
-            for (float s = 0; s < track.Length; s += 0.7f * cell)
+            for (float s = .75f * cell; s < track.Length; s += 1.35f * cell)
             {
                 var p = track.Eval(s, out var dir);
-                var q = Quad("dash", p, new Vector2(0.28f * cell, 0.05f * cell), new Color(1, 1, 1, 0.25f), 2);
+                var q = Quad("dash", p, new Vector2(0.28f * cell, 0.066f * cell), new Color(1, 1, 1, 0.26f), 2);
                 q.transform.rotation = Quaternion.Euler(0, 0, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg);
             }
 
@@ -302,8 +381,11 @@ namespace LoopPark
             {
                 float h = ColumnHeight + 0.12f * cell;
                 var colSpec = Level.columns[j];
-                var colBg = colSpec.colored ? Color.Lerp(skin.columnColor, Palette.Get(colSpec.lcol), 0.55f) : skin.columnColor;
-                ShapeMesh.RoundedRect("Col" + j, root, new Vector2(colX[j], colBottomY + ColumnHeight / 2), new Vector2(cell / 2 + 0.03f * cell, h / 2), 0.18f * cell, colBg, 4);
+                if (colSpec.colored)
+                    ShapeMesh.RoundedRect("Col" + j, root, new Vector2(colX[j], colBottomY + ColumnHeight / 2), new Vector2(cell / 2 + 0.03f * cell, h / 2), 0.18f * cell, Color.Lerp(skin.columnColor, Palette.Get(colSpec.lcol), 0.55f), 4);
+                if (j > 0)
+                    Quad("ParkingLine", new Vector3((colX[j] + colX[j - 1]) / 2, colBottomY + ColumnHeight / 2),
+                        new Vector2(.055f * cell, h), new Color(1, 1, 1, .28f), 4);
                 if (colSpec.colored)
                 {
                     // 彩色车道：入口处画一个同色标记
@@ -318,7 +400,7 @@ namespace LoopPark
                 // 入口箭头
                 var arrow = Quad("arrow", new Vector3(colX[j], ColTopY + gateH * 0.55f), new Vector2(0.22f * cell, 0.22f * cell), new Color(1, 1, 1, 0.45f), 5);
                 arrow.transform.rotation = Quaternion.Euler(0, 0, 45);
-                if (Level.columns[j].fence)
+                if (Level.columns[j].LocksAfterClear)
                 {
                     Gate(new Vector3(colX[j], ColTopY + gateH * 0.5f));
                     Gate(new Vector3(colX[j], colBottomY - gateH * 0.5f));
@@ -346,27 +428,30 @@ namespace LoopPark
             }
 
             // 环路计数牌
-            var badge = new GameObject("Counter");
-            badge.transform.SetParent(root, false);
-            badge.transform.localPosition = new Vector3(track.a + laneW * 0.1f - 0.2f * cell, track.BottomY + laneW * 0.1f, 0);
-            counterBg = badge.AddComponent<SpriteRenderer>();
-            counterBg.sprite = SpriteFactory.RoundedRect(64, 20);
+            var counterSize = new Vector2(2.02f, 1.85f);
+            var badgePosition = new Vector2(Mathf.Min(W - .9f, track.a + .08f * cell), track.BottomY - .66f * cell);
+            counterBg = BoardArtwork.Piece(root, "Counter", "game_brand", badgePosition, counterSize, 40);
             counterBg.drawMode = SpriteDrawMode.Sliced;
-            counterBg.size = new Vector2(1.3f, 0.75f);
-            counterBg.color = new Color(0.22f, 0.22f, 0.3f);
-            counterBg.sortingOrder = 40;
+            counterBg.size = counterSize;
+            var badge = counterBg.gameObject;
+            // Vehicle meshes write depth around -2 to -4, so the counter must be closer to the camera.
+            badge.transform.localPosition = new Vector3(badgePosition.x, badgePosition.y, -6f);
+            counterBg.sortingOrder = 50;
             badge.transform.localScale = Vector3.one * cell;
             var t = new GameObject("Text");
             t.transform.SetParent(badge.transform, false);
-            t.transform.localScale = Vector3.one * 0.07f;
+            t.transform.localPosition = new Vector3(-.23f, .18f);
+            t.transform.localRotation = Quaternion.Euler(0, 0, -12);
+            t.transform.localScale = Vector3.one * .095f;
             counterText = t.AddComponent<TextMesh>();
             counterText.font = SpriteFactory.Font;
             counterText.GetComponent<MeshRenderer>().sharedMaterial = SpriteFactory.Font.material;
-            counterText.GetComponent<MeshRenderer>().sortingOrder = 41;
+            counterText.GetComponent<MeshRenderer>().sortingOrder = 51;
             counterText.fontSize = 64;
             counterText.fontStyle = FontStyle.Bold;
             counterText.anchor = TextAnchor.MiddleCenter;
             counterText.color = Color.white;
+            UpdateCounterText();
         }
 
         GameObject Quad(string n, Vector3 pos, Vector2 size, Color c, int order, Transform parent = null)
@@ -405,6 +490,7 @@ namespace LoopPark
             curtainColor = new int[C];
             laneColorOf = new int[C];
             garageColorOf = new int[C];
+            garageAnyColor = new bool[C];
             iceLeft = new int[C];
             levelIdx = new int[C];
             garageGo = new GameObject[C];
@@ -419,12 +505,14 @@ namespace LoopPark
             for (int j = 0; j < C; j++)
             {
                 cols[j] = new List<CarView>();
-                fence[j] = Level.columns[j].fence;
+                // 提取配置中的 t=1 表示清空后锁定竖列，旧 fence 字段继续兼容旧关卡。
+                fence[j] = Level.columns[j].LocksAfterClear;
                 var specs = Level.columns[j].cars;
                 for (int i = 0; i < specs.Count; i++)
                 {
                     var cv = NewCar(specs[i]);
                     cv.state = CarState.Parked;
+                    cv.SetLayer(20);
                     cv.column = j;
                     cv.transform.localPosition = SlotPos(j, i);
                     cv.SetAngle(180, true);
@@ -435,7 +523,8 @@ namespace LoopPark
                 RevealEnds(j);
                 if (Level.columns[j].cv > 0) BuildCurtain(j, Level.columns[j].cc, Level.columns[j].cv);
                 laneColorOf[j] = Level.columns[j].colored ? Level.columns[j].lcol : -1;
-                if (Level.columns[j].garage) BuildGarage(j, Level.columns[j].gcol);
+                if (Level.columns[j].IsContainer)
+                    BuildGarage(j, Level.columns[j].GetContainerColor());
                 if (Level.columns[j].ice > 0) BuildIce(j, Level.columns[j].ice);
                 if (Level.columns[j].levels.Count > 0) BuildElevatorBadge(j);
             }
@@ -469,7 +558,7 @@ namespace LoopPark
                 UpdateLaneVisibility(l);
             }
 
-            // 绑带：配对并画绳子
+            // 绑带：配对；视觉改由 3D 车顶吸盘附件（CarStrap）承担，不再画 2D 粗绳。
             var byLink = new Dictionary<int, CarView>();
             foreach (var lane in lanes)
                 foreach (var cv in lane)
@@ -479,75 +568,13 @@ namespace LoopPark
                     {
                         cv.partner = other;
                         other.partner = cv;
-                        var ol = RopeHalf(other);
-                        ol.color = new Color(0.16f, 0.13f, 0.24f, 0.55f);
-                        ol.sortingOrder = 25;
-                        ropes.Add(new Rope { a = other, b = cv, ra = RopeHalf(other), rb = RopeHalf(cv), outline = ol });
+                        // 只有配对成功的两辆车才显示车顶吸盘，颜色各自跟随车漆；
+                        // 软管互相指向对方的吸盘，两根在半程处对接成一条左右两色的绑带。
+                        cv.SetLinked(true, other.Strap);
+                        other.SetLinked(true, cv.Strap);
                     }
                     else byLink[cv.link] = cv;
                 }
-            UpdateRopes();
-        }
-
-        SpriteRenderer RopeHalf(CarView car)
-        {
-            var go = new GameObject("Rope");
-            go.transform.SetParent(carRoot, false);
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = SpriteFactory.Capsule();
-            sr.drawMode = SpriteDrawMode.Sliced;
-            var rc = Color.Lerp(Palette.Get(car.color), Color.white, 0.18f);
-            rc.a = 0.92f;
-            sr.color = rc;
-            sr.sortingOrder = 26;
-            return sr;
-        }
-
-        void UpdateRopes()
-        {
-            foreach (var r in ropes)
-            {
-                if (r.a == null || r.b == null) continue;
-                var pa = r.a.transform.localPosition;
-                var pb = r.b.transform.localPosition;
-                var mid = (pa + pb) / 2;
-                bool vis = r.a.gameObject.activeSelf && r.b.gameObject.activeSelf;
-                // 粗绑带：从车身中心连到车身中心，两半各用自己车的颜色，画在车模型上面
-                SetRope(r.outline, pa, pb, vis, 0.40f, -3.0f);
-                SetRope(r.ra, pa, mid, vis, 0.32f, -3.1f);
-                SetRope(r.rb, mid, pb, vis, 0.32f, -3.1f);
-            }
-        }
-
-        void SetRope(SpriteRenderer sr, Vector3 a, Vector3 b, bool visible, float thick, float z)
-        {
-            sr.enabled = visible;
-            var d = b - a;
-            float len = d.magnitude;
-            // 9 宫格的圆角边框是固定像素：直接把 size 设成比边框还细会把两端圆角挤成“蝴蝶结”。
-            // 这里保持 sprite 原始高度，用整体缩放控制粗细，两端始终是完整的半圆头。
-            float h = sr.sprite.rect.height / sr.sprite.pixelsPerUnit;
-            float k = thick * cell / h;
-            sr.transform.localPosition = new Vector3((a.x + b.x) / 2, (a.y + b.y) / 2, z);
-            sr.transform.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
-            sr.transform.localScale = new Vector3(k, k, 1);
-            sr.size = new Vector2(Mathf.Max(h, (len + thick * cell) / k), h);
-        }
-
-        void SnapRope(CarView car)
-        {
-            for (int i = ropes.Count - 1; i >= 0; i--)
-            {
-                var r = ropes[i];
-                if (r.a != car && r.b != car) continue;
-                var mid = (r.a.transform.position + r.b.transform.position) / 2;
-                FxParticle.Burst(fxRoot, mid, r.ra.color, 10, cell * 0.12f, cell * 3f);
-                FxParticle.Burst(fxRoot, mid, r.rb.color, 10, cell * 0.12f, cell * 3f);
-                Destroy(r.ra.gameObject);
-                Destroy(r.rb.gameObject);
-                Destroy(r.outline.gameObject);
-                ropes.RemoveAt(i);
-            }
         }
 
         /// <summary>该车道队首能否发车（考虑绑带）。</summary>
@@ -632,13 +659,17 @@ namespace LoopPark
 
         void RecountLoop()
         {
+            int previousCount = LoopCount;
+            int previousLimit = counterLoopLimit;
             int n = queued.Count;
             foreach (var c in allCars)
                 if (c != null && (c.state == CarState.ToLoop || c.state == CarState.OnLoop || c.state == CarState.Ejecting))
                     n++;
-            if (n != LoopCount)
+            LoopCount = n;
+            if (previousCount != LoopCount || previousLimit != LoopLimit)
             {
-                LoopCount = n;
+                UpdateCounterText();
+                PunchCounter();
             }
             LoopChanged?.Invoke();
         }
@@ -707,7 +738,6 @@ namespace LoopPark
             if (pl >= 0)
             {
                 if (laneX[pl] <= laneX[l]) queued.Add(front.partner);
-                SnapRope(car);
                 Emit("linkgo", car);
             }
             RecountLoop();
@@ -726,7 +756,7 @@ namespace LoopPark
             car.SetLayer(30);
             car.PlayEvent("tap");
             car.SetIdle(false);
-            DriveToMerge(car, mergeS, loopSpeed, departurePath, distance);
+            DriveToMerge(car, QueueEntranceS, mergeS, departurePath, distance);
         }
 
         void AdvanceLane(int l)
@@ -756,7 +786,7 @@ namespace LoopPark
             TryUnlock();
         }
 
-        void Enter(CarView car, int j, float entrySpeed)
+        void Enter(CarView car, int j, float entrySpeed, float remainingTime)
         {
             loopCars.Remove(car);
             loopSpeeds.Remove(car);
@@ -768,7 +798,7 @@ namespace LoopPark
             c.Add(car);
 
             CarView ejected = null;
-            if (c.Count > Level.capacity)
+            if (c.Count > Level.EffectiveCapacity)
             {
                 ejected = c[0];
                 c.RemoveAt(0);
@@ -778,8 +808,10 @@ namespace LoopPark
             int slot = c.Count - 1;
             car.SetLayer(30);
             car.ParkAlong(track.ParkingPath(car.s, SlotPos(j, slot), 0.65f * cell),
-                entrySpeed, ParkingSpeed, moveSpeed, () => OnCarParked(car, j), leader: leader, gap: laneStep - 0.001f * cell);
+                entrySpeed, ParkingSpeed, moveSpeed, () => OnCarParked(car, j), leader: leader,
+                gap: parkingStep - 0.001f * cell, firstFrameTime: remainingTime);
             car.BeginTireTrail(fxRoot);
+            PlaySparkFx(car);
             StartCoroutine(EmitWheelSmoke(car));
 
             if (ejected != null)
@@ -792,7 +824,8 @@ namespace LoopPark
                 ejected.Reveal();
                 ejected.PlayEvent("push");
                 if (ejected.hasKey) ReleaseKey(ejected);
-                DriveToMerge(ejected, track.SAtBottom(colX[j]), moveSpeed * 0.9f);
+                var merge = ejectionMerges[j];
+                DriveToMerge(ejected, merge.start, merge.end, merge.path, merge.distance, remainingTime);
                 Sfx.Play("push");
                 Emit("push", ejected);
             }
@@ -809,12 +842,36 @@ namespace LoopPark
 
         IEnumerator EmitWheelSmoke(CarView car)
         {
+            var accelerationFx = SkinConfig.Instance.accelerationFx;
+            if (accelerationFx != null && car != null && fxRoot != null)
+            {
+                // Keep the authored burst independent from the car lifetime while it finishes playing.
+                var fx = Instantiate(accelerationFx, car.transform.position, car.transform.rotation, fxRoot);
+                fx.name = "AccelerationFx";
+                fx.transform.localScale = Vector3.one * Mathf.Max(0.01f, car.Width);
+                foreach (var particle in fx.GetComponentsInChildren<ParticleSystem>(true)) particle.Play(true);
+                Destroy(fx, EffectLifetime(fx));
+                yield break;
+            }
+
             for (int i = 0; i < 3; i++)
             {
                 if (car == null || fxRoot == null) yield break;
                 FxParticle.WheelSmoke(fxRoot, car);
                 if (i < 2) yield return new WaitForSeconds(0.1f);
             }
+        }
+
+        // 复用皮肤配置中的一次性火花预制体，并按粒子实际生命周期自动释放。
+        void PlaySparkFx(CarView car)
+        {
+            var sparkFx = SkinConfig.Instance.sparkFx;
+            if (sparkFx == null || car == null || fxRoot == null) return;
+            var fx = Instantiate(sparkFx, car.transform.position, car.transform.rotation, fxRoot);
+            fx.name = "SparkFx";
+            fx.transform.localScale = Vector3.one * Mathf.Max(0.01f, car.Width);
+            foreach (var particle in fx.GetComponentsInChildren<ParticleSystem>(true)) particle.Play(true);
+            Destroy(fx, EffectLifetime(fx));
         }
 
 
@@ -838,9 +895,25 @@ namespace LoopPark
         bool IsClearable(int j)
         {
             var c = cols[j];
-            if (c.Count != Level.capacity) return false;
-            for (int i = 1; i < c.Count; i++) if (c[i].color != c[0].color) return false;
+            int matchCount = Level.capacity;
+            if (c.Count < matchCount) return false;
+            int first = c.Count - matchCount;
+            for (int i = first + 1; i < c.Count; i++)
+                if (c[i].color != c[first].color) return false;
             return true;
+        }
+
+        // The matching group is taken from the entry end of the column. Lower cars
+        // remain parked when a column has one more physical slot than cp.
+        int ClearStartIndex(int j)
+        {
+            int matchCount = Level.capacity;
+            var c = cols[j];
+            if (c.Count < matchCount) return -1;
+            int first = c.Count - matchCount;
+            for (int i = first + 1; i < c.Count; i++)
+                if (c[i].color != c[first].color) return -1;
+            return first;
         }
 
         void OnCarParked(CarView car, int j)
@@ -859,11 +932,18 @@ namespace LoopPark
         {
             transit++;
             yield return new WaitForSeconds(0.12f);
-            var c = new List<CarView>(cols[j]);
+            int first = ClearStartIndex(j);
+            if (first < 0)
+            {
+                clearing[j] = false;
+                transit--;
+                yield break;
+            }
+
+            var c = new List<CarView>(cols[j].GetRange(first, Level.capacity));
+            var survivors = new List<CarView>(cols[j].GetRange(0, first));
             Sfx.Play("clear");
             Sfx.Vibrate();
-            var colColor = c.Count > 0 ? Palette.Get(c[0].color) : Color.white;
-            FxParticle.Flash(fxRoot, root.TransformPoint(new Vector3(colX[j], colBottomY + ColumnHeight / 2)), new Vector2(cell, ColumnHeight), new Color(1, 1, 1, 0.55f), 0.35f);
             foreach (var car in c)
             {
                 if (car.hasKey) ReleaseKey(car);
@@ -875,28 +955,31 @@ namespace LoopPark
             // 从上到下依次弹起消失
             for (int i = c.Count - 1; i >= 0; i--)
             {
-                StartCoroutine(PopAndDie(c[i], colColor));
+                StartCoroutine(PopAndDie(c[i]));
                 yield return new WaitForSeconds(0.05f);
             }
             yield return new WaitForSeconds(0.3f);
-            cols[j].Clear();
+            cols[j].RemoveRange(first, Level.capacity);
+            for (int i = 0; i < survivors.Count; i++)
+                survivors[i].MoveAlong(new[] { SlotPos(j, i) }, moveSpeed * 0.8f, null, false);
+            RevealEnds(j);
             clearing[j] = false;
             Remaining -= c.Count;
             if (c.Count > 0) CurtainProgress(c[0].color, c.Count);
             if (c.Count > 0) GarageProgress(c[0].color);
             IceCountdown(j);
-            ElevatorRise(j);
             if (fence[j])
             {
                 closed[j] = true;
                 closedMarks[j].SetActive(true);
             }
+            if (cols[j].Count == 0) ElevatorRise(j);
             transit--;
             Emit("cleared", null);
             if (Remaining <= 0) StartCoroutine(WinRoutine());
         }
 
-        IEnumerator PopAndDie(CarView car, Color color)
+        IEnumerator PopAndDie(CarView car)
         {
             float t = 0;
             var start = car.Visual.localScale;
@@ -909,9 +992,28 @@ namespace LoopPark
                 car.Visual.localScale = start * s;
                 yield return null;
             }
-            FxParticle.Burst(fxRoot, car.transform.position, color, 8, cell * 0.16f, cell * 4f);
+            if (CarClearFx != null)
+            {
+                var fx = Instantiate(CarClearFx, car.transform.position, Quaternion.identity, fxRoot);
+                fx.transform.localScale = Vector3.one * Mathf.Max(0.01f, car.Width * 1.35f);
+                // Let every child particle and trail finish before releasing the one-shot effect.
+                Destroy(fx, EffectLifetime(fx));
+            }
             allCars.Remove(car);
             Destroy(car.gameObject);
+        }
+
+        static float EffectLifetime(GameObject effect)
+        {
+            float lifetime = 0.1f;
+            foreach (var particle in effect.GetComponentsInChildren<ParticleSystem>(true))
+            {
+                var main = particle.main;
+                lifetime = Mathf.Max(lifetime, main.duration + main.startLifetime.constantMax);
+            }
+            foreach (var trail in effect.GetComponentsInChildren<TrailRenderer>(true))
+                lifetime = Mathf.Max(lifetime, trail.time);
+            return lifetime + 0.1f;
         }
 
         IEnumerator WinRoutine()
@@ -937,7 +1039,6 @@ namespace LoopPark
             ProcessDispatchQueue();
             CheckStuck(dt);
             AnimateCounter(dt);
-            UpdateRopes();
             if (AutoPlay) AutoStep(dt);
         }
 
@@ -975,6 +1076,7 @@ namespace LoopPark
             if (dt <= 0f) return;
             loopPositions.Clear();
             parkArrivals.Clear();
+            loopMoves.Clear();
             // 所有车辆读取同一帧的前车位置，结果不受更新顺序影响。
             foreach (var car in loopCars) loopPositions.Add(car, car.s);
             // 车尾离开环道前，后车仍需给入库车辆留出车距。
@@ -986,13 +1088,25 @@ namespace LoopPark
                     loopPositions.Add(entering, entering.s);
             }
 
-            foreach (var car in loopCars)
+            for (int i = 0; i < loopCars.Count; i++)
             {
+                var car = loopCars[i];
                 float prev = car.s;
                 float free = float.PositiveInfinity;
+                int leader = -1;
+                float gap = float.PositiveInfinity;
+                for (int j = 0; j < loopCars.Count; j++)
+                {
+                    if (i == j) continue;
+                    float ahead = track.Forward(prev, loopCars[j].s) - spacing;
+                    if (ahead >= gap) continue;
+                    gap = ahead;
+                    leader = j;
+                }
                 foreach (var front in loopPositions)
                 {
-                    if (front.Key != car) free = Mathf.Min(free, track.Forward(prev, front.Value) - spacing);
+                    if (!loopSpeeds.ContainsKey(front.Key))
+                        free = Mathf.Min(free, track.Forward(prev, front.Value) - spacing);
                 }
                 if (mergingCar != null) free = Mathf.Min(free, track.Forward(prev, mergingS) - spacing);
 
@@ -1009,50 +1123,91 @@ namespace LoopPark
                 }
 
                 float room = Mathf.Max(0f, free);
-                float speedLimit = Mathf.Min(loopSpeed, Mathf.Sqrt(2f * moveSpeed * room));
+                gap = Mathf.Max(0f, gap);
+                float speedLimit = Mathf.Min(loopSpeed, Mathf.Sqrt(2f * LoopBraking * room));
+                if (leader >= 0)
+                {
+                    float leaderSpeed = loopSpeeds[loopCars[leader]];
+                    speedLimit = Mathf.Min(speedLimit, Mathf.Sqrt(leaderSpeed * leaderSpeed + 2f * LoopBraking * gap));
+                }
                 if (target >= 0)
                 {
                     float turnSpeed = ParkingEntryReady(car, target, true) ? ParkingSpeed : 0f;
-                    speedLimit = Mathf.Min(speedLimit, Mathf.Sqrt(turnSpeed * turnSpeed + 2f * moveSpeed * bestAhead));
+                    speedLimit = Mathf.Min(speedLimit, Mathf.Sqrt(turnSpeed * turnSpeed + 2f * LoopBraking * bestAhead));
                 }
-                float oldSpeed = loopSpeeds[car];
-                float nextSpeed = Mathf.Min(oldSpeed + moveSpeed * dt, speedLimit);
-                float step = Mathf.Min(bestAhead, Mathf.Min(room, nextSpeed * dt));
-                bool atEntry = target >= 0 && bestAhead <= step;
-                car.s = atEntry ? track.Wrap(entryS[target]) : track.Wrap(prev + step);
-                float speed = step / dt;
-                if (oldSpeed > loopSpeed * 0.5f && nextSpeed <= loopSpeed * 0.5f) car.Brake(0.5f, movingForward: true);
+                float nextSpeed = Mathf.Min(loopSpeeds[car] + moveSpeed * dt, speedLimit);
+                loopMoves.Add((leader, gap, target, bestAhead, nextSpeed, Mathf.Min(bestAhead, Mathf.Min(room, nextSpeed * dt))));
+            }
+
+            // Propagate an actual stop back through the queue before moving any car.
+            for (int pass = 1; pass < loopMoves.Count; pass++)
+            {
+                bool changed = false;
+                for (int i = 0; i < loopMoves.Count; i++)
+                {
+                    var move = loopMoves[i];
+                    if (move.leader < 0) continue;
+                    float limit = move.gap + loopMoves[move.leader].step;
+                    if (move.step <= limit) continue;
+                    move.step = limit;
+                    loopMoves[i] = move;
+                    changed = true;
+                }
+                if (!changed) break;
+            }
+
+            for (int i = 0; i < loopCars.Count; i++)
+            {
+                var car = loopCars[i];
+                var move = loopMoves[i];
+                float prev = car.s;
+                bool atEntry = move.target >= 0 && move.ahead <= move.step;
+                car.s = atEntry ? track.Wrap(entryS[move.target]) : track.Wrap(car.s + move.step);
+                float speed = move.step / dt;
+                if (loopSpeeds[car] > loopSpeed * 0.5f && (atEntry ? move.speed : speed) <= loopSpeed * 0.5f)
+                    car.Brake(0.5f, movingForward: true);
                 loopSpeeds[car] = speed;
                 car.transform.localPosition = track.Eval(car.s, out var dir);
                 car.SetAngle(Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f, false);
-                if (atEntry) parkArrivals.Add((car, target, Mathf.Min(nextSpeed, ParkingSpeed)));
+                float firstTurnS = track.SAtBottom(track.center.x + track.a - track.r);
+                if (!turnSparkCars.Contains(car) && prev < firstTurnS && car.s >= firstTurnS)
+                {
+                    turnSparkCars.Add(car);
+                    PlaySparkFx(car);
+                }
+                if (atEntry)
+                {
+                    // The loop step may reach the parking entry before the frame ends.
+                    float remainingTime = move.speed > 0f ? Mathf.Max(0f, dt - move.step / move.speed) : dt;
+                    Debug.Assert(remainingTime >= 0f && remainingTime <= dt);
+                    parkArrivals.Add((car, move.target, Mathf.Min(move.speed, ParkingSpeed), remainingTime));
+                }
             }
 
-            foreach (var (car, column, speed) in parkArrivals)
+            foreach (var (car, column, speed, remainingTime) in parkArrivals)
             {
                 if (!CanEnter(column, car.color) || !ParkingEntryReady(car, column, false)) continue;
-                Enter(car, column, speed);
+                Enter(car, column, speed, remainingTime);
             }
         }
 
-        bool ParkingTailClear(CarView car) => track.TopY - car.transform.localPosition.y >= laneStep;
+        bool ParkingTailClear(CarView car) => track.TopY - car.transform.localPosition.y >= parkingStep;
 
         bool ParkingEntryReady(CarView car, int j, bool useSnapshot)
         {
             var column = cols[j];
-            if (column.Count < Level.capacity)
+            if (column.Count < Level.EffectiveCapacity)
                 return incoming[j] == 0 || ParkingTailClear(column[column.Count - 1]);
             if (incoming[j] > 0) return false;
-            var outgoing = column[0];
-            float s = track.SAtBottom(colX[j]);
-            float travel = Vector3.Distance(outgoing.transform.localPosition, track.Eval(s, out _)) / (moveSpeed * 0.9f);
-            return !outgoing.Moving && CanStartMerge(s, travel, car, useSnapshot);
+            var merge = ejectionMerges[j];
+            return !column[0].Moving && CanStartMerge(merge.end, CarView.DepartureTime(merge.distance, loopSpeed),
+                car, useSnapshot, merge.start);
         }
 
-        void DriveToMerge(CarView car, float s, float speed, Vector3[] curve = null, float distance = 0f)
+        void DriveToMerge(CarView car, float start, float s, Vector3[] curve, float distance, float firstFrameTime = float.PositiveInfinity)
         {
             mergingCar = car;
-            mergingS = curve == null ? s : track.SAtBottom(laneX[car.lane]);
+            mergingS = start;
             void Arrive()
             {
                 if (mergingCar != car) return;
@@ -1064,10 +1219,9 @@ namespace LoopPark
                 loopSpeeds.Add(car, loopSpeed);
                 loopCars.Add(car);
                 mergingCar = null;
-                if (curve != null) AdvanceLane(car.lane);
+                if (car.lane >= 0) AdvanceLane(car.lane);
             }
-            if (curve == null) car.MoveAlong(new[] { (Vector3)track.Eval(s, out _) }, speed, Arrive, brake: false);
-            else car.DepartAlong(curve, distance, speed, Arrive);
+            car.DepartAlong(curve, distance, loopSpeed, Arrive, firstFrameTime);
             car.BeginTireTrail(fxRoot);
         }
 
@@ -1076,8 +1230,8 @@ namespace LoopPark
             if (Ended || mergingCar != null || queued.Count == 0) return;
             var chosen = queued[0];
             if (chosen.Moving) return;
-            float startS = track.SAtBottom(laneX[chosen.lane]);
-            float s = track.Wrap(startS + 0.75f * cell);
+            float startS = QueueEntranceS;
+            float s = QueueMergeS;
             float distance = track.DeparturePath(chosen.transform.localPosition, s, departurePath);
             if (!CanStartMerge(s, CarView.DepartureTime(distance, loopSpeed), reservationStart: startS)) return;
             Debug.Assert(lanes[chosen.lane].Count > 0 && lanes[chosen.lane][0] == chosen,
@@ -1093,7 +1247,7 @@ namespace LoopPark
             float rearClearance = spacing * 1.2f + travel * loopSpeed;
             // 空档较短时，给后车留出在发车口前刹停的距离。
             if (reservationStart.HasValue)
-                rearClearance = Mathf.Min(rearClearance, track.Forward(reservationStart.Value, s) + spacing + loopSpeed * loopSpeed / (2f * moveSpeed));
+                rearClearance = Mathf.Min(rearClearance, track.Forward(reservationStart.Value, s) + spacing + loopSpeed * loopSpeed / (2f * LoopBraking));
             foreach (var c in loopCars)
             {
                 if (c == departing) continue;
@@ -1143,23 +1297,30 @@ namespace LoopPark
         void AnimateCounter(float dt)
         {
             if (counterText == null) return;
-            counterText.text = $"{LoopCount}/{LoopLimit}";
+            if (counterLoopCount != LoopCount || counterLoopLimit != LoopLimit)
+                UpdateCounterText();
             bool full = LoopCount >= LoopLimit;
             float pulse = full ? 0.5f + 0.5f * Mathf.Sin(Time.time * 8f) : 0f;
-            counterBg.color = full ? Color.Lerp(new Color(0.85f, 0.2f, 0.2f), new Color(1f, 0.45f, 0.4f), pulse) : new Color(0.22f, 0.22f, 0.3f);
-            if (edgeMesh != null)
+            counterBg.color = full ? Color.Lerp(new Color(1f, 0.45f, 0.42f), Color.white, pulse * .4f) : Color.white;
+            if (edgeMesh != null && (full || edgeWasFull))
             {
-                var c = full ? Color.Lerp(edgeColor, new Color(1f, 0.25f, 0.25f), 0.4f + 0.6f * pulse) : edgeColor;
-                var cs = edgeMesh.colors;
-                if (cs.Length > 0 && cs[0] != c)
-                {
-                    for (int i = 0; i < cs.Length; i++) cs[i] = c;
-                    edgeMesh.colors = cs;
-                }
+                Color32 c = full ? Color.Lerp(Color.white, new Color(1f, 0.25f, 0.25f), 0.4f + 0.6f * pulse) : Color.white;
+                System.Array.Fill(edgeColors, c);
+                edgeMesh.colors32 = edgeColors;
+                edgeWasFull = full;
             }
             counterPunch = Mathf.MoveTowards(counterPunch, 0, dt * 2f);
             float k = 1 + Mathf.Sin(counterPunch * 25f) * counterPunch * 0.4f;
-            counterBg.transform.localScale = Vector3.one * cell * k;
+            // Punch only the number so the counter badge stays fixed in place.
+            counterText.transform.localScale = Vector3.one * .095f * k;
+        }
+
+        void UpdateCounterText()
+        {
+            if (counterText == null) return;
+            counterLoopCount = LoopCount;
+            counterLoopLimit = LoopLimit;
+            counterText.text = $"{LoopCount}/{LoopLimit}";
         }
 
         void PunchCounter() => counterPunch = 0.6f;
@@ -1484,18 +1645,19 @@ namespace LoopPark
         }
 
         // ===================================================================
-        // 车库（锁定车位）
+        // 集装箱：遮住整列，完成对应颜色的消除后只打开外壳，车仍留在列内。
         // ===================================================================
         void BuildGarage(int j, int color)
         {
-            garageColorOf[j] = color;
+            garageAnyColor[j] = color < 0;
+            garageColorOf[j] = color >= 0 ? color : -1;
             float h = ColumnHeight + 0.12f * cell;
             var go = ShapeMesh.RoundedRect("Garage" + j, root, new Vector2(colX[j], colBottomY + ColumnHeight / 2),
                 new Vector2(cell / 2 + 0.03f * cell, h / 2), 0.14f * cell, new Color(0.30f, 0.32f, 0.40f), 35);
             go.transform.localPosition = new Vector3(0, 0, -1.2f);
             garageGo[j] = go;
             // 卷帘门横条
-            int slats = Level.capacity * 2;
+            int slats = Level.EffectiveCapacity * 2;
             for (int k = 0; k < slats; k++)
             {
                 var sl = new GameObject("slat").AddComponent<SpriteRenderer>();
@@ -1509,7 +1671,7 @@ namespace LoopPark
             var plate = new GameObject("plate").AddComponent<SpriteRenderer>();
             plate.transform.SetParent(go.transform, false);
             plate.sprite = SpriteFactory.Circle();
-            plate.color = Palette.Get(color);
+            plate.color = color >= 0 ? Palette.Get(color) : new Color(0.95f, 0.55f, 0.18f);
             plate.sortingOrder = 37;
             plate.transform.localPosition = new Vector3(colX[j], colBottomY + ColumnHeight * 0.5f, 0);
             plate.transform.localScale = Vector3.one * cell * 0.75f;
@@ -1527,7 +1689,8 @@ namespace LoopPark
         {
             for (int j = 0; j < cols.Length; j++)
             {
-                if (garageColorOf[j] != color) continue;
+                if (!garageAnyColor[j] && garageColorOf[j] != color) continue;
+                garageAnyColor[j] = false;
                 garageColorOf[j] = -1;
                 var go = garageGo[j];
                 garageGo[j] = null;

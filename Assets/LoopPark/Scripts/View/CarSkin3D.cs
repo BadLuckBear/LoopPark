@@ -14,6 +14,10 @@ namespace LoopPark
         public Animator animator;
         [Tooltip("模型节点（用于点头/侧倾动画）")]
         public Transform body;
+        [Tooltip("问号车布料覆盖层；由车辆模型配置工具自动绑定。")]
+        public CarRevealCover revealCover;
+        [Tooltip("绑带车车顶附件（吸盘+软管）；由车辆模型配置工具自动绑定。")]
+        public CarStrap strap;
         [Tooltip("车辆外观共享配置；颜色、车窗、灯条和光泽均以此资源为准，可在播放时调整。")]
         public SkinConfig appearance;
 
@@ -39,13 +43,37 @@ namespace LoopPark
         {
             if (appearance == null) return;
             var profile = appearance.GetCarAppearance(hidden ? -1 : colorIndex);
-            // 首次使用时缓存，之后实时调节无需重复获取材质数组。
+            // 显色期间先保留布料，等待 reveal 动画结束后再隐藏覆盖层。
+            revealCover ??= GetComponentInChildren<CarRevealCover>(true);
+            if (revealCover != null)
+            {
+                if (hidden) revealCover.SetCovered(true);
+                else if (!revealCover.IsRevealing) revealCover.SetCovered(false);
+            }
+            // 绑带附件跟随车漆：颜色与光泽取该颜色编号的外观配置，问号车被盖住时同步隐藏。
+            strap ??= GetComponentInChildren<CarStrap>(true);
+            if (strap != null)
+            {
+                strap.SetCovered(hidden);
+                strap.SetPaint(color, profile.carSmoothness, profile.carSpecular);
+            }
+            // 首次使用时缓存，之后实时调节无需重复获取材质数组；覆盖层与绑带附件各自管理材质。
             if (renderers == null)
             {
-                renderers = GetComponentsInChildren<Renderer>(true);
+                var allRenderers = GetComponentsInChildren<Renderer>(true);
+                int count = 0;
+                foreach (var candidate in allRenderers)
+                    if (!IsOverlayRenderer(candidate.transform)) count++;
+                renderers = new Renderer[count];
+                int index = 0;
+                foreach (var candidate in allRenderers)
+                    if (!IsOverlayRenderer(candidate.transform)) renderers[index++] = candidate;
                 materials = new Material[renderers.Length][];
                 for (int i = 0; i < renderers.Length; i++) materials[i] = renderers[i].sharedMaterials;
             }
+            // 问号车的隐藏状态由车衣单独承担，车身渲染器必须关闭，避免车衣网格边缘露出车头或车尾。
+            for (int i = 0; i < renderers.Length; i++)
+                renderers[i].enabled = !hidden;
             mpb ??= new MaterialPropertyBlock();
             for (int i = 0; i < renderers.Length; i++)
             {
@@ -54,7 +82,8 @@ namespace LoopPark
                 for (int slot = 0; slot < materials[i].Length; slot++)
                 {
                     if (materials[i][slot] == null) continue;
-                    var replacement = CarMaterialColors.ResolveMaterial(materials[i][slot].name, profile);
+                    string materialName = materials[i][slot].name;
+                    var replacement = CarMaterialColors.ResolveMaterial(materialName, profile);
                     // 深度 Shader 是车辆跨网格排序的必要条件，拒绝不兼容材质。
                     if (replacement != null && replacement.shader.name != CarMaterialColors.ShaderName)
                         replacement = null;
@@ -66,10 +95,18 @@ namespace LoopPark
                     mpb.SetFloat(DepthId, depth);
                     if (replacement != null)
                     {
+                        // Replacement materials keep the authored parts and shaders,
+                        // while the normalized level palette remains the source of truth
+                        // for the visible body color.
+                        if (materialName == "car_base" || materialName == "car_jingzi")
+                        {
+                            mpb.SetColor(ColorId, color);
+                            mpb.SetColor(BaseColorId, color);
+                        }
                         renderers[i].SetPropertyBlock(mpb, slot);
                         continue;
                     }
-                    var c = CarMaterialColors.Resolve(materials[i][slot].name, color, profile);
+                    var c = CarMaterialColors.Resolve(materialName, color, profile);
                     c.a = 1;
                     mpb.SetColor(ColorId, c);
                     mpb.SetColor(BaseColorId, c);
@@ -82,6 +119,25 @@ namespace LoopPark
             }
         }
 
+        /// <summary>按车辆所在区域选择问号车布料的初始姿态。</summary>
+        public void SetRevealArea(bool upperArea)
+        {
+            revealCover ??= GetComponentInChildren<CarRevealCover>(true);
+            revealCover?.SetUpperArea(upperArea);
+        }
+
+        /// <summary>绑带配对状态：CarView 配对成功后转发，只有成对车辆才显示车顶吸盘。</summary>
+        public void SetLinked(bool on, CarStrap partner)
+        {
+            strap ??= GetComponentInChildren<CarStrap>(true);
+            strap?.SetLinked(on, partner);
+        }
+
+        /// <summary>覆盖层与绑带附件各自管理材质，不参与车漆批量上色。</summary>
+        bool IsOverlayRenderer(Transform t) =>
+            (revealCover != null && t.IsChildOf(revealCover.transform)) ||
+            (strap != null && t.IsChildOf(strap.transform));
+
         public void SetAccessory(string name, bool on)
         {
             if (accessories == null) return;
@@ -91,6 +147,7 @@ namespace LoopPark
         public void PlayEvent(string evt)
         {
             if (animator != null) animator.SetTrigger(evt);
+            if (evt == "reveal" && revealCover != null) revealCover.PlayReveal();
             switch (evt)
             {
                 case "tap": tiltVel -= 260f; break;   // 起步抬头
@@ -104,9 +161,14 @@ namespace LoopPark
         {
             if (body == null) return;
             // 弹簧：车身绕左右轴前后摆动
-            float dt = Time.deltaTime;
-            tiltVel += (-tilt * 180f - tiltVel * 14f) * dt;
-            tilt += tiltVel * dt;
+            float rest = Mathf.Min(Time.deltaTime, 0.1f);
+            while (rest > 1e-5f)
+            {
+                float h = Mathf.Min(rest, 1f / 120f);
+                tiltVel += (-tilt * 180f - tiltVel * 14f) * h;
+                tilt += tiltVel * h;
+                rest -= h;
+            }
             body.localRotation = bodyBase * Quaternion.Euler(tilt, 0, 0);
         }
     }

@@ -205,7 +205,8 @@ namespace LoopPark
 
             // 颜色组：前 colors 个组颜色各不相同，之后的组重复已有颜色
             var palette = new List<int>();
-            for (int i = 0; i < Palette.Count; i++) palette.Add(i);
+            for (int i = 0; i < Palette.Count; i++)
+                if (n > 60 || (i != Palette.DarkGreen && i != Palette.Beige && i != Palette.SkyBlue)) palette.Add(i);
             Shuffle(palette, rng);
             var groupColors = new List<int>();
             for (int g = 0; g < p.groups; g++)

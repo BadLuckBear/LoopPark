@@ -1,0 +1,60 @@
+level=1 validate=ok cars=14 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=2 validate=ok cars=12 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=3 validate=ok cars=20 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=4 validate=ok cars=24 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=5 validate=ok cars=30 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=6 validate=ok cars=35 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=7 validate=ok cars=18 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=8 validate=ok cars=35 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=9 validate=ok cars=35 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=10 validate=ok cars=35 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=11 validate=ok cars=35 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=12 validate=slotCapacity < capacity cars=42 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=13 validate=ok cars=42 beam=True replay=True solutionSteps=12 beamWidth=1000 beamMs=14 skill1=0/20 skill2=2/20 error=
+level=14 validate=ok cars=40 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=15 validate=ok cars=25 beam=True replay=True solutionSteps=10 beamWidth=1000 beamMs=16 skill1=19/20 skill2=20/20 error=
+level=16 validate=ok cars=40 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=17 validate=ok cars=40 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=18 validate=slotCapacity < capacity cars=48 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=19 validate=ok cars=45 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=1 skill1=0/20 skill2=0/20 error=
+level=20 validate=ok cars=50 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=21 validate=ok cars=40 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=22 validate=ok cars=45 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=1 skill1=0/20 skill2=0/20 error=
+level=23 validate=ok cars=54 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=24 validate=ok cars=45 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=25 validate=ok cars=45 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=26 validate=ok cars=45 beam=True replay=True solutionSteps=20 beamWidth=1000 beamMs=27 skill1=0/20 skill2=0/20 error=
+level=27 validate=slotCapacity < capacity cars=66 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=1 skill1=0/20 skill2=0/20 error=
+level=28 validate=ok cars=40 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=29 validate=ok cars=50 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=30 validate=link 1 invalid cars=25 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=31 validate=ok cars=45 beam=True replay=True solutionSteps=12 beamWidth=1000 beamMs=14 skill1=20/20 skill2=20/20 error=
+level=32 validate=link 3 invalid cars=50 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=33 validate=ok cars=32 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=34 validate=ok cars=50 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=35 validate=ok cars=40 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=36 validate=ok cars=40 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=37 validate=link 1 invalid cars=48 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=38 validate=column over capacity cars=50 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=1 skill1=0/20 skill2=0/20 error=
+level=39 validate=ok cars=55 beam=True replay=True solutionSteps=16 beamWidth=1000 beamMs=30 skill1=20/20 skill2=20/20 error=
+level=40 validate=ok cars=40 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=41 validate=ok cars=40 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=2 skill1=0/20 skill2=0/20 error=
+level=42 validate=ok cars=60 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=43 validate=ok cars=50 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=44 validate=ok cars=50 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=45 validate=ok cars=50 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=46 validate=ok cars=50 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=1 skill1=0/20 skill2=0/20 error=
+level=47 validate=link 1 invalid cars=56 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=48 validate=link 1 invalid cars=50 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=49 validate=ok cars=54 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=50 validate=ok cars=25 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=51 validate=ok cars=35 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=52 validate=ok cars=40 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=53 validate=ok cars=40 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=54 validate=ok cars=50 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=55 validate=ok cars=35 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=56 validate=ok cars=50 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=2 skill1=0/20 skill2=0/20 error=
+level=57 validate=ok cars=45 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=58 validate=ok cars=45 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=59 validate=ok cars=40 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=
+level=60 validate=ok cars=40 beam=False replay=False solutionSteps=0 beamWidth=20000 beamMs=0 skill1=0/20 skill2=0/20 error=

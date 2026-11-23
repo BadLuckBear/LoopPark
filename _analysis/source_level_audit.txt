@@ -1,0 +1,60 @@
+01 cp=4 tl=5 slots=2 units=4 cars=14 caps=[5, 5] colors={1: 5, 2: 4, 4: 1, 15: 4} divisible_by_slot=False
+02 cp=4 tl=5 slots=2 units=4 cars=12 caps=[4, 4] colors={1: 4, 2: 4, 15: 4} divisible_by_slot=True
+03 cp=4 tl=5 slots=3 units=8 cars=20 caps=[4, 4, 4] colors={1: 4, 2: 4, 5: 4, 11: 4, 15: 4} divisible_by_slot=True
+04 cp=4 tl=5 slots=4 units=8 cars=24 caps=[4, 4, 4, 4] colors={1: 4, 2: 4, 5: 4, 8: 4, 11: 4, 15: 4} divisible_by_slot=True
+05 cp=5 tl=5 slots=4 units=10 cars=30 caps=[5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 8: 5, 11: 5, 15: 5} divisible_by_slot=True
+06 cp=5 tl=5 slots=5 units=10 cars=35 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 8: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+07 cp=4 tl=5 slots=2 units=8 cars=18 caps=[5, 5] colors={1: 5, 2: 4, 10: 4, 15: 5} divisible_by_slot=False
+08 cp=5 tl=5 slots=5 units=10 cars=35 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 8: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+09 cp=5 tl=5 slots=5 units=10 cars=35 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+10 cp=5 tl=5 slots=5 units=10 cars=35 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 8: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+11 cp=5 tl=5 slots=5 units=10 cars=35 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 8: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+12 cp=6 tl=5 slots=5 units=12 cars=42 caps=[6, 6, 6, 6, 6] colors={1: 6, 2: 6, 5: 6, 8: 6, 10: 6, 11: 6, 15: 6} divisible_by_slot=True
+13 cp=6 tl=5 slots=5 units=12 cars=42 caps=[6, 6, 6, 6, 6] colors={1: 6, 2: 6, 5: 6, 8: 6, 10: 6, 11: 6, 15: 6} divisible_by_slot=True
+14 cp=5 tl=5 slots=5 units=15 cars=40 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 8: 5, 9: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+15 cp=5 tl=5 slots=3 units=10 cars=25 caps=[5, 5, 5] colors={1: 5, 2: 5, 5: 5, 11: 5, 15: 5} divisible_by_slot=True
+16 cp=5 tl=5 slots=5 units=15 cars=40 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 8: 5, 9: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+17 cp=5 tl=5 slots=5 units=15 cars=40 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 8: 5, 9: 5, 10: 5, 13: 5, 15: 5} divisible_by_slot=True
+18 cp=6 tl=5 slots=5 units=18 cars=48 caps=[6, 6, 6, 6, 6] colors={1: 6, 2: 6, 5: 6, 8: 6, 9: 6, 10: 6, 11: 6, 15: 6} divisible_by_slot=True
+19 cp=5 tl=5 slots=5 units=20 cars=45 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 10, 5: 10, 10: 5, 13: 5, 15: 5} divisible_by_slot=True
+20 cp=5 tl=5 slots=7 units=15 cars=50 caps=[5, 5, 5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 6: 5, 8: 5, 9: 5, 10: 5, 11: 5, 13: 5, 15: 5} divisible_by_slot=True
+21 cp=5 tl=5 slots=5 units=15 cars=40 caps=[5, 5, 5, 5, 5] colors={2: 5, 5: 5, 6: 5, 8: 5, 10: 5, 11: 5, 13: 5, 15: 5} divisible_by_slot=True
+22 cp=5 tl=5 slots=5 units=20 cars=45 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 6: 5, 10: 5, 11: 5, 15: 10} divisible_by_slot=True
+23 cp=6 tl=5 slots=5 units=24 cars=54 caps=[6, 6, 6, 6, 6] colors={1: 6, 2: 12, 5: 6, 8: 12, 10: 6, 11: 6, 15: 6} divisible_by_slot=True
+24 cp=5 tl=5 slots=5 units=20 cars=45 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 6: 5, 8: 5, 9: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+25 cp=5 tl=5 slots=6 units=15 cars=45 caps=[5, 5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 8: 5, 9: 5, 10: 5, 11: 5, 13: 5, 15: 5} divisible_by_slot=True
+26 cp=5 tl=5 slots=5 units=20 cars=45 caps=[5, 5, 5, 5, 5] colors={1: 10, 2: 5, 5: 5, 8: 5, 10: 10, 11: 5, 15: 5} divisible_by_slot=True
+27 cp=6 tl=5 slots=5 units=36 cars=66 caps=[6, 6, 6, 6, 6] colors={1: 12, 2: 6, 5: 6, 8: 6, 10: 12, 11: 6, 13: 6, 15: 12} divisible_by_slot=True
+28 cp=5 tl=5 slots=5 units=15 cars=40 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 6: 5, 8: 5, 10: 5, 15: 5} divisible_by_slot=True
+29 cp=5 tl=5 slots=5 units=25 cars=50 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 10, 3: 5, 5: 5, 8: 5, 10: 5, 11: 10, 15: 5} divisible_by_slot=True
+30 cp=5 tl=5 slots=3 units=10 cars=25 caps=[5, 5, 5] colors={1: 5, 2: 5, 5: 5, 11: 5, 15: 5} divisible_by_slot=True
+31 cp=5 tl=5 slots=5 units=20 cars=45 caps=[5, 5, 5, 5, 5] colors={1: 10, 2: 5, 5: 10, 10: 5, 11: 5, 15: 10} divisible_by_slot=True
+32 cp=5 tl=5 slots=5 units=25 cars=50 caps=[5, 5, 5, 5, 5] colors={1: 10, 2: 5, 3: 5, 5: 5, 8: 5, 10: 5, 11: 5, 15: 10} divisible_by_slot=True
+33 cp=4 tl=5 slots=5 units=12 cars=32 caps=[4, 4, 4, 4, 4] colors={1: 4, 2: 4, 5: 4, 6: 4, 10: 4, 11: 4, 13: 4, 15: 4} divisible_by_slot=True
+34 cp=5 tl=5 slots=5 units=25 cars=50 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 10, 5: 5, 8: 5, 10: 10, 11: 5, 15: 5} divisible_by_slot=True
+35 cp=5 tl=5 slots=5 units=15 cars=40 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 8: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+36 cp=5 tl=5 slots=5 units=15 cars=40 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 8: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+37 cp=6 tl=5 slots=5 units=18 cars=48 caps=[6, 6, 6, 6, 6] colors={1: 6, 2: 6, 3: 6, 5: 6, 8: 6, 10: 6, 11: 6, 15: 6} divisible_by_slot=True
+38 cp=5 tl=5 slots=5 units=20 cars=50 caps=[6, 6, 6, 6, 6] colors={1: 5, 2: 6, 3: 6, 5: 7, 8: 5, 10: 6, 11: 5, 13: 5, 15: 5} divisible_by_slot=False
+39 cp=5 tl=5 slots=7 units=20 cars=55 caps=[5, 5, 5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 6: 5, 8: 5, 10: 10, 11: 5, 13: 5, 15: 5} divisible_by_slot=True
+40 cp=5 tl=5 slots=5 units=15 cars=40 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 8: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+41 cp=5 tl=5 slots=6 units=10 cars=40 caps=[5, 5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 8: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+42 cp=6 tl=5 slots=6 units=24 cars=60 caps=[6, 6, 6, 6, 6, 6] colors={1: 6, 2: 6, 3: 6, 5: 6, 8: 6, 9: 6, 10: 6, 11: 6, 13: 6, 15: 6} divisible_by_slot=True
+43 cp=5 tl=5 slots=6 units=20 cars=50 caps=[5, 5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 10, 5: 5, 8: 10, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+44 cp=5 tl=5 slots=5 units=25 cars=50 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 10, 3: 5, 5: 5, 8: 10, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+45 cp=5 tl=5 slots=5 units=25 cars=50 caps=[5, 5, 5, 5, 5] colors={1: 10, 2: 5, 5: 5, 8: 5, 10: 10, 11: 10, 15: 5} divisible_by_slot=True
+46 cp=5 tl=5 slots=7 units=15 cars=50 caps=[5, 5, 5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 6: 5, 8: 5, 9: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+47 cp=7 tl=5 slots=4 units=28 cars=56 caps=[7, 7, 7, 7] colors={1: 7, 2: 7, 5: 7, 8: 7, 10: 7, 11: 14, 15: 7} divisible_by_slot=True
+48 cp=5 tl=5 slots=5 units=25 cars=50 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 6: 5, 8: 5, 9: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+49 cp=6 tl=5 slots=6 units=18 cars=54 caps=[6, 6, 6, 6, 6, 6] colors={1: 6, 2: 6, 5: 6, 8: 6, 10: 6, 11: 6, 13: 6, 15: 12} divisible_by_slot=True
+50 cp=5 tl=5 slots=3 units=10 cars=25 caps=[5, 5, 5] colors={1: 5, 2: 5, 5: 5, 11: 5, 15: 5} divisible_by_slot=True
+51 cp=5 tl=5 slots=5 units=10 cars=35 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 8: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+52 cp=5 tl=5 slots=5 units=15 cars=40 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 8: 5, 9: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+53 cp=5 tl=5 slots=5 units=15 cars=40 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 8: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+54 cp=5 tl=5 slots=7 units=15 cars=50 caps=[5, 5, 5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 8: 5, 10: 5, 11: 5, 13: 5, 15: 10} divisible_by_slot=True
+55 cp=5 tl=5 slots=5 units=10 cars=35 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 8: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True
+56 cp=5 tl=5 slots=5 units=25 cars=50 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 10, 5: 5, 8: 5, 10: 10, 11: 5, 15: 5} divisible_by_slot=True
+57 cp=5 tl=5 slots=5 units=20 cars=45 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 8: 5, 10: 5, 11: 5, 13: 5, 15: 5} divisible_by_slot=True
+58 cp=5 tl=5 slots=5 units=20 cars=45 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 8: 5, 10: 5, 11: 5, 13: 5, 15: 5} divisible_by_slot=True
+59 cp=5 tl=5 slots=5 units=15 cars=40 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 5: 5, 8: 5, 10: 5, 11: 5, 13: 5, 15: 5} divisible_by_slot=True
+60 cp=5 tl=5 slots=5 units=15 cars=40 caps=[5, 5, 5, 5, 5] colors={1: 5, 2: 5, 3: 5, 5: 5, 8: 5, 10: 5, 11: 5, 15: 5} divisible_by_slot=True

@@ -73,12 +73,17 @@ namespace LoopPark
         public Color[] carColors;
         [Tooltip("隐藏颜色的问号车统一使用此颜色，揭示后恢复对应的车身颜色。")]
         public Color hiddenCarColor = new Color(0.45f, 0.34f, 0.80f);
-        [Tooltip("3D 车模型的俯视倾角（度）：模型绕屏幕水平轴倾斜，能看到车头/车尾侧面，0 = 正俯视")]
+        [Header("3D 车辆区域视角")]
+        [Tooltip("上方停车区的 3D 车模型俯视倾角（度）；0 = 正俯视。")]
         public float carViewTilt = 36f;
+        [Tooltip("下方发车区的 3D 车模型俯视倾角（度）；发车后会平滑过渡到停车区角度。")]
+        public float departureCarViewTilt = 24f;
+        [Min(0.01f), Tooltip("发车区与停车区之间的视角过渡时长（秒）。")]
+        public float carViewTiltTransitionTime = 0.65f;
 
         [Header("3D 车辆外观（播放时修改立即生效）")]
-        [Tooltip("相对标准车模型的横向/纵向缩放，默认 X=1.4、Y=1.2；只改变外观，不改变逻辑车位或碰撞间距。")]
-        public Vector2 carModelScale = new Vector2(1.4f, 1.2f);
+        [Tooltip("相对标准车模型的 X/Y/Z 缩放，默认 X=1.4、Y=1.2、Z=1；只改变外观，不改变逻辑车位或碰撞间距。")]
+        public Vector3 carModelScale = new Vector3(1.4f, 1.2f, 1f);
         [Header("3D 车辆光照（启动关卡时应用，预览使用同一组参数）")]
         [Min(0)] public float carKeyLightIntensity = 1.1f;
         [Tooltip("光线照射方向，Z 应大于 0。")]
@@ -177,6 +182,7 @@ namespace LoopPark
             EnsureCarAppearances();
             carModelScale.x = Mathf.Max(0.1f, carModelScale.x);
             carModelScale.y = Mathf.Max(0.1f, carModelScale.y);
+            carModelScale.z = Mathf.Max(0.1f, carModelScale.z);
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.delayCall -= RefreshCarAppearance;
             UnityEditor.EditorApplication.delayCall += RefreshCarAppearance;
@@ -189,6 +195,15 @@ namespace LoopPark
         [Tooltip("发车道第一排的待机抖动幅度（度），0 = 关闭")]
         public float idleShake = 1.2f;
         [Header("尾气烟团图")]
+        [Tooltip("发车区第一排待机时使用的特效预制体，例如 Fx_Car_fire1。挂载后优先使用该预制体。")]
+        public GameObject idleExhaustFx;
+        [Tooltip("车辆移动时使用的刹车痕迹特效预制体，例如 Fx_Car_vestige。挂载后优先使用该预制体。")]
+        public GameObject tireTrailFx;
+        [Header("车辆移动特效")]
+        [Tooltip("车辆开始移动时播放的一次性加速特效，例如 Fx_Car_fire2。挂载后优先使用该预制体。")]
+        public GameObject accelerationFx;
+        [Tooltip("车辆第一次过弯和进入停车区时播放的一次性火花特效，例如 Fx_Car_spark。")]
+        public GameObject sparkFx;
         [Tooltip("尾气烟团图（留空用程序生成的云朵）")]
         public Sprite exhaustSprite;
         public Color exhaustColor = new Color(1f, 1f, 1f, 0.9f);

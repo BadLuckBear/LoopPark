@@ -44,7 +44,7 @@ namespace LoopPark
 
         void SyncAudio()
         {
-            if (musicSource) musicSource.mute = !SaveSystem.D.sound;
+            if (musicSource) musicSource.mute = !SaveSystem.D.music;
         }
 
         public static void Play(string id, float pitch = 1f)

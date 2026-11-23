@@ -15,7 +15,9 @@ namespace LoopPark
         public long lifeStamp;
         public int[] boosters = { 2, 2, 2 };
         public bool sound = true;
+        public bool music = true;
         public bool vibrate = true;
+        public string language = "English";
         public List<string> tips = new List<string>();
         public int bestLevel = 1;
     }
@@ -24,17 +26,17 @@ namespace LoopPark
     public static class Economy
     {
         public const int MaxLives = 5;
-        public const int LifeRegenSeconds = 20 * 60;
-        public const int ContinueCost = 300;     // 失败后 +3 车位继续
+        public const int LifeRegenSeconds = 60 * 60;
+        public const int ContinueCost = 900;     // 失败后 +3 车位继续
         public const int ContinueSlots = 3;
-        public const int RefillLivesCost = 500;
+        public const int RefillLivesCost = 900;
         public static readonly int[] BoosterPrice = { 150, 200, 120 };
-        public static readonly string[] BoosterName = { "+1车位", "洗牌", "透视" };
+        public static readonly string[] BoosterName = { "+1 parking space", "mess up", "Perspective" };
         public static readonly string[] BoosterDesc =
         {
-            "本关环路容量 +1",
-            "打乱所有停车列里车辆的颜色",
-            "显示所有问号车的颜色",
+            "+1 to this level's loop capacity",
+            "Shuffle the colors of all the cars in the parking line",
+            "Show the color of the question mark car",
         };
 
         public static int WinReward(int difficulty) => 30 + difficulty * 20;
@@ -43,7 +45,12 @@ namespace LoopPark
     public static class SaveSystem
     {
         const string Key = "looppark_save_v1";
+        const string ManualLanguageKey = "looppark_language_manual_v1";
         static PlayerData data;
+
+        public static bool HasManualLanguage => PlayerPrefs.HasKey(ManualLanguageKey);
+
+        public static void MarkManualLanguage() => PlayerPrefs.SetInt(ManualLanguageKey, 1);
 
         public static PlayerData D
         {
@@ -77,6 +84,7 @@ namespace LoopPark
         public static void Reset()
         {
             data = new PlayerData();
+            PlayerPrefs.DeleteKey(ManualLanguageKey);
             Save();
         }
 
@@ -114,6 +122,19 @@ namespace LoopPark
         {
             if (D.coins < coins) return false;
             D.coins -= coins;
+            Save();
+            return true;
+        }
+
+        public static bool TryBuyBooster(Booster booster)
+        {
+            int index = (int)booster;
+            if ((uint)index >= Economy.BoosterPrice.Length) return false;
+            var player = D;
+            int price = Economy.BoosterPrice[index];
+            if (player.coins < price) return false;
+            player.coins -= price;
+            player.boosters[index]++;
             Save();
             return true;
         }

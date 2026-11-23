@@ -12,6 +12,9 @@ namespace LoopPark
 
         public static string ResourcePath(int n) => $"Levels/level_{n:D4}";
 
+        // Editor tools call this after rewriting a level resource during the same session.
+        public static void Invalidate(int n) => cache.Remove(n);
+
         public static LevelData Get(int n)
         {
             if (n < 1 || n > MaxLevel) throw new ArgumentOutOfRangeException(nameof(n));

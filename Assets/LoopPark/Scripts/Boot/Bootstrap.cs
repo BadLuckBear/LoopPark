@@ -16,6 +16,11 @@ namespace LoopPark
     /// </summary>
     public class Bootstrap : MonoBehaviour
     {
+        // Designer control: 1.0 is the previous board size; 1.25 matches the larger reference framing.
+        [SerializeField, Range(0.9f, 1.4f)] float boardScale = 1f;
+        // Designer-assigned effect played when a matched car disappears.
+        [SerializeField] GameObject carClearFx;
+
         GameController game;
         UIManager ui;
 
@@ -51,6 +56,8 @@ namespace LoopPark
             SdkIntegration.Initialize();
 
             game = new GameObject("Game").AddComponent<GameController>();
+            game.BoardScale = boardScale;
+            game.CarClearFx = carClearFx;
             ui = new GameObject("UI").AddComponent<UIManager>();
             ui.Init(game);
         }
