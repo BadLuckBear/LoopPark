@@ -90,6 +90,15 @@ namespace LoopPark
         /// <summary>绑带附件当前是否可见：属于一对绑带，或正在播发车扯断演出；问号车被盖住时一律不可见。</summary>
         public bool IsVisible => (linked || breakState != BreakState.None) && !covered;
 
+        /// <summary>所属车辆本身是否已显示（未藏在屏幕外或车库里）。</summary>
+        /// <remarks>
+        /// 读父节点的激活链，而不是 gameObject.activeInHierarchy：本节点在预制体里默认 inactive，
+        /// 由 Apply() 按 IsVisible 自行开关，读自己只会得到「附件自己的显隐」。
+        /// 车辆被 GameController.UpdateLaneVisibility 关掉（滚出屏幕 / 还在车库）时整条父链失活，
+        /// 搭档那侧靠这个判断收起套管，避免场上的车往空地伸出半根悬空管子。
+        /// </remarks>
+        bool HostCarVisible => transform.parent == null || transform.parent.gameObject.activeInHierarchy;
+
         /// <summary>套管节点；供诊断/编辑器工具读取。</summary>
         public Transform Hose => sleeve != null ? sleeve.Renderer.transform : null;
 
@@ -339,8 +348,11 @@ namespace LoopPark
                 return;
             }
 
-            // 阶段 0：正常连接
-            bool usable = linked && !covered && partner != null && art != null && art.Ready && partner.art != null && partner.art.Ready;
+            // 阶段 0：正常连接 —— 只有双方车辆都已经出来显示了，才画套管
+            // （另一半还在车库/屏幕外时，场上这辆不许往空地伸管子；两车都出来后自然接上）
+            bool usable = linked && !covered && partner != null
+                && HostCarVisible && partner.HostCarVisible
+                && art != null && art.Ready && partner.art != null && partner.art.Ready;
             if (!usable) { sleeve?.Hide(); ApplyColors(); return; }
 
             art.AimAt(partner.SocketWorldPosition);
