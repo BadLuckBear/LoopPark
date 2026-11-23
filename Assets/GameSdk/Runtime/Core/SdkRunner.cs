@@ -36,7 +36,7 @@ namespace Game.Sdk
 
             if (_instance == null)
             {
-                Debug.LogWarning("[SdkRunner] 尚未创建，立即执行回调");
+                Debug.LogWarning("[SdkRunner] Not created yet, running callback immediately");
                 action();
                 return;
             }

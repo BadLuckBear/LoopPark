@@ -24,7 +24,7 @@ namespace Game.Sdk
         {
             if (platform == null)
             {
-                Debug.LogError("[Sdk] Install 收到 null，保持原平台不变");
+                Debug.LogError("[Sdk] Install received null, keeping current platform");
                 return;
             }
 

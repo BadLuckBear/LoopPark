@@ -19,41 +19,41 @@ namespace LoopPark
     ///   Editor/StrapTuningWindow（Play 中修改 + 保存） → 本资产
     ///   → CarStrap.ApplyColors 每帧读取 → StrapPaint 写属性块（不改共享材质）
     /// </summary>
-    [CreateAssetMenu(menuName = "LoopPark/绑带调色", fileName = "StrapTuning")]
+    [CreateAssetMenu(menuName = "LoopPark/Strap Tuning", fileName = "StrapTuning")]
     public sealed class StrapTuningConfig : ScriptableObject
     {
         /// <summary>单根管子的颜色覆盖（key = 配对编号）。</summary>
         [System.Serializable]
         public sealed class HoseColorEntry
         {
-            [Tooltip("稳定标识：link<配对编号>（同一关重跑不变）")]
+            [Tooltip("Stable id: link<pairing id> (unchanged when replaying the same level)")]
             public string key;
             public Color color = Color.white;
         }
 
-        [Header("全局规则（没有被单根覆盖的管子按这里）")]
-        [Tooltip("开启 = 套管/绑带跟随本车车漆色；关闭 = 统一使用下面的软管色。")]
+        [Header("Global rule (hoses without their own override follow this)")]
+        [Tooltip("On = sleeves/straps follow this car paint; off = use the single hose color below.")]
         public bool useCarPaint = true;
 
-        [Tooltip("统一软管色（useCarPaint 关闭时生效）。")]
+        [Tooltip("Single hose color (used when useCarPaint is off).")]
         public Color hoseColor = new Color(0.34f, 0.36f, 0.40f, 1f);
 
-        [Tooltip("默认关闭：调色只改**代码生成的套管**，美术吸盘/弯头保持本车车漆色。" +
-                 "只有想让整条绑带（含美术件）一起染色时才勾上。")]
+        [Tooltip("Off by default: tinting only changes code-generated sleeves; art suction cups/elbows keep the car paint. Enable only to tint the whole strap including art pieces." +
+                 "Tick only if the whole strap (including art pieces) should be tinted.")]
         public bool affectsArt = false;
 
-        [Header("材质观感")]
-        [Tooltip("跟随车漆时的提亮量（朝白插值）。0 = 与车漆完全同色。")]
+        [Header("Material look")]
+        [Tooltip("Brightness added when following car paint (lerp toward white). 0 = identical to paint.")]
         [Range(0f, 0.6f)] public float lift = 0f;
 
-        [Tooltip("光滑度（高光宽度）。越小越哑光，越大越亮。")]
+        [Tooltip("Smoothness (highlight width). Lower = more matte, higher = glossier.")]
         [Range(0f, 1f)] public float smoothness = 0.18f;
 
-        [Tooltip("高光强度。圆柱面上高光会明显变亮，觉得管子偏亮就调小。")]
+        [Tooltip("Specular intensity. Cylindrical surfaces brighten noticeably; lower it if the hose looks too bright.")]
         [Range(0f, 1f)] public float specular = 0.08f;
 
-        [Header("单根覆盖")]
-        [Tooltip("列在这里的管子用各自的颜色；不在列表里的走上面的全局规则。")]
+        [Header("Per-hose override")]
+        [Tooltip("Hoses listed here use their own colors; unlisted ones follow the global rule above.")]
         public List<HoseColorEntry> hoses = new List<HoseColorEntry>();
 
         /// <summary>查这根管子是否有单独指定的颜色。</summary>

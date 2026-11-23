@@ -6,7 +6,7 @@ namespace LoopPark
     /// <summary>为整辆多网格车提供统一深度；屏幕下方车辆覆盖上方车辆，移动层优先。</summary>
     public sealed class CarLayerDepth : MonoBehaviour
     {
-        [Tooltip("车辆逻辑位置与层级来源；只读取位置，不修改行驶轨迹和车距。")]
+        [Tooltip("Logical position and layering source for the car; only reads position, never changes the path or spacing.")]
         [SerializeField] Transform anchor;
         Renderer[] renderers;
         int[] materialCounts;

@@ -20,7 +20,7 @@ namespace Game.Sdk
         {
             if (_starter == null)
             {
-                Debug.Log("[SdkNativeStarter] 无原生启动器（Null 平台），跳过");
+                Debug.Log("[SdkNativeStarter] No native starter (Null platform), skipped");
                 return;
             }
             _starter(isDebug);

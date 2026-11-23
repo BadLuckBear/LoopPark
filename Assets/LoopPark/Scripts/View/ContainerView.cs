@@ -17,14 +17,14 @@ namespace LoopPark
     /// </summary>
     public sealed class ContainerView : MonoBehaviour
     {
-        [Header("层级引用（预制体内）")]
-        [Tooltip("只承担缩放与居中的节点，自身不能有旋转")]
+        [Header("Hierarchy references (inside prefab)")]
+        [Tooltip("Scale/centering-only node; must not be rotated itself")]
         [SerializeField] Transform _fitRoot;
-        [Tooltip("只承担朝向校正的节点，必须是 (-90,0,0)")]
+        [Tooltip("Orientation-only node; must be (-90,0,0)")]
         [SerializeField] Transform _visualAxis;
         [SerializeField] Transform _roofPivot;
         [SerializeField] Transform _topClipAnchor;
-        [Tooltip("两端立柱/角环节点（polySurface43 / polySurface48），用于抵消纵向非均匀拉伸")]
+        [Tooltip("End posts / corner rings (polySurface43 / polySurface48) used to cancel non-uniform vertical stretch")]
         [SerializeField] Transform _topCap;
         [SerializeField] Transform _bottomCap;
         [SerializeField] ContainerColorIcon _colorIcon;
@@ -68,7 +68,7 @@ namespace LoopPark
             if (!CacheModelBounds()) return;
 
             if (!_ready && !IsAxisRotationValid())
-                Debug.LogError("[ContainerView] VisualAxis 的旋转不是 (-90,0,0)，尺寸适配会错位", this);
+                Debug.LogError("[ContainerView] VisualAxis rotation is not (-90,0,0); size fitting will be off", this);
 
             // 可调参数全部来自 LoopParkSkin，改完对新生成的集装箱立即生效
             var skin = SkinConfig.Instance;
@@ -78,7 +78,7 @@ namespace LoopPark
             var size = _modelBounds.size;
             if (size.x < 1e-4f || size.y < 1e-4f || size.z < 1e-4f)
             {
-                Debug.LogError("[ContainerView] 模型包围盒退化，无法适配尺寸", this);
+                Debug.LogError("[ContainerView] Degenerate model bounds, cannot fit size", this);
                 return;
             }
 
@@ -149,12 +149,12 @@ namespace LoopPark
         {
             if (_visualAxis == null || _fitRoot == null)
             {
-                Debug.LogError("[ContainerView] 层级引用缺失（_fitRoot/_visualAxis）", this);
+                Debug.LogError("[ContainerView] Missing hierarchy references (_fitRoot/_visualAxis)", this);
                 return false;
             }
             if (!TryLocalBounds(_visualAxis, _visualAxis, out _modelBounds))
             {
-                Debug.LogError("[ContainerView] VisualAxis 下没有可用网格", this);
+                Debug.LogError("[ContainerView] No usable mesh under VisualAxis", this);
                 return false;
             }
             if (_roofPivot != null && TryLocalBounds(_visualAxis, _roofPivot, out var roofBounds))

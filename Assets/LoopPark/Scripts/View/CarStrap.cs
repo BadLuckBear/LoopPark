@@ -25,31 +25,31 @@ namespace LoopPark
     [DefaultExecutionOrder(100)]   // 排在 CarLayerDepth（默认 0）之后：颜色与深度都落笔在它后面
     public sealed class CarStrap : MonoBehaviour
     {
-        [Tooltip("附件渲染器；留空时在 Awake 自动收集子渲染器。")]
+        [Tooltip("Attachment renderers; when empty, child renderers are collected in Awake.")]
         [SerializeField] Renderer[] renderers;
-        [Tooltip("相对车身整车的深度偏置；负数压到车顶之上，取值需小于相邻车的深度间隔。")]
+        [Tooltip("Depth offset of the whole car; negative presses it above the roof. Must be smaller than the depth gap between adjacent cars.")]
         [SerializeField] float depthBias = -0.06f;
-        [Tooltip("弯头整体缩放：相邻两车过近、直口伸过两车中点时调小（0.7~1）。")]
+        [Tooltip("Elbow overall scale: reduce (0.7~1) when two cars are too close and the straight mouth passes the midpoint.")]
         [Range(0.2f, 1.5f)][SerializeField] float elbowScale = 1f;
-        [Tooltip("套管半径相对美术直口口径的比例。大于 1 = 套管像卡箍一样套在管口外侧；等于或小于 1 斜看会从单面壳管口透出背景。")]
+        [Tooltip("Sleeve radius relative to the art mouth diameter. Above 1 = the sleeve clamps outside the mouth; at or below 1 the single-sided shell shows the background at an angle.")]
         [Range(0.6f, 1.3f)][SerializeField] float hoseRadiusScale = 1f;
-        [Tooltip("套管起点往直口内探进的深度，按口径的倍数计。保持 0：探进去会和美术管身重叠成 z-fighting（实测会在接缝处露出缺口）。")]
+        [Tooltip("How far the sleeve start reaches into the mouth, in multiples of the diameter. Keep at 0: overlapping the art tube causes z-fighting (gaps appear at the seam in practice).")]
         [Range(0f, 6f)][SerializeField] float socketInset = 0f;
-        [Tooltip("绑带色对车漆色的提亮量（朝白色插值）。默认 0 = 与车漆完全同色（弯头与车身一致）。" +
-                 "只有在极暗车漆下觉得管子完全看不出受光时才调，例如 0.15。")]
+        [Tooltip("How much the strap color is brightened toward white relative to car paint. Default 0 = identical to paint (elbow matches the body)." +
+                 "Only tune this when the hose shows no lighting on very dark paint, e.g. 0.15.")]
         [Range(0f, 0.6f)][SerializeField] float hoseLift = 0f;
-        [Tooltip("绑带调色资产（可空）。非空时它覆盖这里的颜色与材质观感 —— " +
-                 "运行中用 LoopPark/绑带/实时调色 窗口改，改完保存，下次启动继续生效。")]
+        [Tooltip("Strap tuning asset (optional). When set, it overrides the colors and material look here -- " +
+                 "Edit live with the LoopPark/Straps/Live Tuning window; save to keep it for the next launch.")]
         [SerializeField] StrapTuningConfig tuning;
 
-        [Header("发车扯断")]
-        [Tooltip("拉长到原长的多少倍就立刻啪地扯断（推荐 1.15 ~ 1.25）。")]
+        [Header("Departure snap")]
+        [Tooltip("Snap instantly once stretched to this multiple of the original length (1.15 ~ 1.25 recommended).")]
         [SerializeField] float breakMaxStretch = 1.2f;
-        [Tooltip("拉伸阶段最长持续时间（秒）。车开得慢时按时间兜底，保证一定断得掉。")]
+        [Tooltip("Max duration of the stretching phase (seconds). Acts as a fallback so the snap always happens when the car moves slowly.")]
         [SerializeField] float breakMaxSeconds = 0.14f;
-        [Tooltip("扯断后，断管缩回直口的时间（秒）。")]
+        [Tooltip("Time for the broken hose to retract into the mouth after the snap (seconds).")]
         [SerializeField] float retractSeconds = 0.10f;
-        [Tooltip("扯断后，吸盘与弯头平滑缩小消失的时间（秒）。")]
+        [Tooltip("Time for the suction cups and elbows to shrink away after the snap (seconds).")]
         [SerializeField] float fadeOutSeconds = 0.22f;
 
         static readonly int ColorId = Shader.PropertyToID("_Color");

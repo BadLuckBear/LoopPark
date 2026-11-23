@@ -18,7 +18,7 @@ namespace Game.Sdk.Impl.ShuYuan
                 Debug.Log("[SYNativeStart] ShuYuanSDK.Init(" + isDebug + ")");
                 ShuYuanSDK.Init(isDebug);
                 Debug.Log("[SYNativeStart] Instance="
-                          + (ShuYuanSDK.Instance != null ? "已创建" : "null!"));
+                          + (ShuYuanSDK.Instance != null ? "created" : "null!"));
             });
         }
     }

@@ -30,14 +30,14 @@ namespace LoopPark.EditorTools
         /// 之后改代码里的默认值对这份预制体不再生效（实测 hoseRadiusScale 一直停在旧值 0.97，
         /// 连续改了五版参数都「没效果」）。改默认值时同步跑一次这个。
         /// </summary>
-        [MenuItem("LoopPark/绑带/参数写入预制体")]
+        [MenuItem("LoopPark/Straps/Write Params to Prefab")]
         public static void WritePrefabFields()
         {
             var root = PrefabUtility.LoadPrefabContents(PrefabPath);
             try
             {
                 var strap = root.GetComponentInChildren<CarStrap>(true);
-                if (strap == null) { Debug.LogError("[StrapRigCheck] 预制体里没有 CarStrap"); return; }
+                if (strap == null) { Debug.LogError("[StrapRigCheck] No CarStrap in prefab"); return; }
                 var so = new SerializedObject(strap);
                 SetFloat(so, "depthBias", -0.06f);
                 SetFloat(so, "elbowScale", 1f);
@@ -55,7 +55,7 @@ namespace LoopPark.EditorTools
                 }
                 so.ApplyModifiedPropertiesWithoutUndo();
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
-                Debug.Log("[StrapRigCheck] 绑带参数已写入 " + PrefabPath);
+                Debug.Log("[StrapRigCheck] Strap params written to " + PrefabPath);
             }
             finally
             {
@@ -64,7 +64,7 @@ namespace LoopPark.EditorTools
         }
 
         /// <summary>创建调色资产（若不存在）并挂到预制体的 CarStrap.tuning —— 之后 LoopPark/绑带/实时调色 窗口即可用。</summary>
-        [MenuItem("LoopPark/绑带/创建调色资产并挂到预制体")]
+        [MenuItem("LoopPark/Straps/Create Tuning Asset and Attach to Prefab")]
         public static void EnsureTuningAsset()
         {
             var config = AssetDatabase.LoadAssetAtPath<StrapTuningConfig>(TuningPath);
@@ -78,7 +78,7 @@ namespace LoopPark.EditorTools
             try
             {
                 var strap = root.GetComponentInChildren<CarStrap>(true);
-                if (strap == null) { Debug.LogError("[StrapRigCheck] 预制体里没有 CarStrap"); return; }
+                if (strap == null) { Debug.LogError("[StrapRigCheck] No CarStrap in prefab"); return; }
                 var so = new SerializedObject(strap);
                 var property = so.FindProperty("tuning");
                 property.objectReferenceValue = config;
@@ -90,7 +90,7 @@ namespace LoopPark.EditorTools
                 PrefabUtility.UnloadPrefabContents(root);
             }
             AssetDatabase.SaveAssets();
-            Debug.Log("[StrapRigCheck] 调色资产 " + TuningPath + " 已创建并挂到预制体");
+            Debug.Log("[StrapRigCheck] Tuning asset " + TuningPath + " created and attached to prefab");
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace LoopPark.EditorTools
         /// 否则会误删 Scene 视图自己的光照场景（CustomLightsScene-SceneView*，删掉也能自愈，但没必要动它），
         /// 以及必须保留的预制体资产（用 PrefabUtility.IsPartOfPrefabAsset 兜底排除）。
         /// </summary>
-        [MenuItem("LoopPark/绑带/清理场景里的残留 (工具生成物)")]
+        [MenuItem("LoopPark/Straps/Clean Scene Leftovers (Tool-Generated)")]
         public static void CleanupLeftovers()
         {
             var sb = new StringBuilder();
@@ -125,7 +125,7 @@ namespace LoopPark.EditorTools
             }
             Directory.CreateDirectory("Logs");
             File.WriteAllText("Logs/strap_leftovers.txt", "removed=" + removed + System.Environment.NewLine + sb);
-            Debug.Log("[StrapRigCheck] 已清理残留 " + removed + " 个，清单见 Logs/strap_leftovers.txt");
+            Debug.Log("[StrapRigCheck] Cleaned up " + removed + " leftovers, list in Logs/strap_leftovers.txt");
         }
 
         static int CountChildren(GameObject root)
@@ -138,7 +138,7 @@ namespace LoopPark.EditorTools
         /// <summary>诊断：把内存里所有「车 / 绑带相关」对象列出来（含 HideAndDontSave、含子节点、含预览场景），
         /// 并把每根套管的 shader / 属性块 _Color / _CarDepth / renderer.enabled 打出来，
         /// 写到 Logs/strap_objects.txt（Play 模式下跑一次就是游戏内真值）。</summary>
-        [MenuItem("LoopPark/绑带/列出车与绑带对象 (诊断)")]
+        [MenuItem("LoopPark/Straps/List Cars and Straps (Diagnostics)")]
         public static void DumpCarObjects()
         {
             var sb = new StringBuilder();
@@ -178,14 +178,14 @@ namespace LoopPark.EditorTools
                     + " mpbDepth=" + block.GetFloat("_CarDepth")
                     + " bounds=" + renderer.bounds);
             }
-            if (hose.Length == 0) hose.AppendLine("<没有找到任何 StrapSleeve 渲染器>");
+            if (hose.Length == 0) hose.AppendLine("<no StrapSleeve renderer found>");
             File.WriteAllText("Logs/strap_hose.txt", hose.ToString());
-            Debug.Log("[StrapRigCheck] 套管渲染器状态写到 Logs/strap_hose.txt");
-            Debug.Log("[StrapRigCheck] 车/绑带对象清单写到 Logs/strap_objects.txt");
+            Debug.Log("[StrapRigCheck] Sleeve renderer state written to Logs/strap_hose.txt");
+            Debug.Log("[StrapRigCheck] Car/strap object list written to Logs/strap_objects.txt");
         }
 
         /// <summary>诊断：把当前场景所有根节点的名字 / hideFlags / 子节点数 / 是否预制体实例导到 Logs/scene_roots.txt。</summary>
-        [MenuItem("LoopPark/绑带/列出场景根节点 (诊断)")]
+        [MenuItem("LoopPark/Straps/List Scene Roots (Diagnostics)")]
         public static void DumpSceneRoots()
         {
             var sb = new StringBuilder();
@@ -202,15 +202,15 @@ namespace LoopPark.EditorTools
                     + " components=" + string.Join("/", System.Linq.Enumerable.Select(root.GetComponents<Component>(), c => c == null ? "null" : c.GetType().Name)));
             }
             File.WriteAllText("Logs/scene_roots.txt", sb.ToString());
-            Debug.Log("[StrapRigCheck] 根节点清单写到 Logs/scene_roots.txt");
+            Debug.Log("[StrapRigCheck] Root node list written to Logs/scene_roots.txt");
         }
 
-        [MenuItem("LoopPark/绑带/验证接管 (数值 + 预览图)")]
+        [MenuItem("LoopPark/Straps/Verify Takeover (Values + Preview Image)")]
         public static void Run()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             var config = AssetDatabase.LoadAssetAtPath<SkinConfig>(SkinPath);
-            if (prefab == null || config == null) { Debug.LogError("[StrapRigCheck] 缺少 prefab/SkinConfig"); return; }
+            if (prefab == null || config == null) { Debug.LogError("[StrapRigCheck] Missing prefab/SkinConfig"); return; }
 
             CleanupLeftovers();   // 先自清：上次跑挂了留下的测试车/套管不要带进这次
 
@@ -221,13 +221,13 @@ namespace LoopPark.EditorTools
             {
                 var strapA = a.GetComponentInChildren<CarStrap>(true);
                 var strapB = b.GetComponentInChildren<CarStrap>(true);
-                if (strapA == null || strapB == null) { Debug.LogError("[StrapRigCheck] 预制体上没有 CarStrap"); return; }
+                if (strapA == null || strapB == null) { Debug.LogError("[StrapRigCheck] No CarStrap on prefab"); return; }
 
                 strapA.SetLinked(true, strapB);
                 strapB.SetLinked(true, strapA);
-                log.AppendLine("# 两侧字段（预制体里的值，不是代码默认值）" + FieldDump(strapA));
-                log.AppendLine("# 套管实际使用的 shader = " + SleeveShader(strapA));
-                log.AppendLine("# 逐朝向（deg = 搭档相对本车吸盘的方向）");
+                log.AppendLine("# both-side fields (prefab values, not code defaults)" + FieldDump(strapA));
+                log.AppendLine("# shader actually used by sleeve = " + SleeveShader(strapA));
+                log.AppendLine("# per heading (deg = partner direction relative to this car suction cup)");
 
                 // 绕 A 车吸盘转一圈：既有正对车道的水平方向，也有斜向，覆盖转向的两个极端
                 float[] degrees = { 0f, 45f, 90f, 135f, 180f, 250f };
@@ -253,12 +253,12 @@ namespace LoopPark.EditorTools
                 skinB.SetCarColor(Palette.Get(0), false, 0);
                 strapA.SetLinked(true, strapB);
                 strapB.SetLinked(true, strapA);
-                log.AppendLine("# 颜色(同色配对 0/0) " + ColorReport(strapA, strapB));
+                log.AppendLine("# colors (same-color pair 0/0) " + ColorReport(strapA, strapB));
 
                 skinB.SetCarColor(Palette.Get(3), false, 3);
                 strapA.SetLinked(true, strapB);
                 strapB.SetLinked(true, strapA);
-                log.AppendLine("# 颜色(异色配对 0/3) " + ColorReport(strapA, strapB));
+                log.AppendLine("# colors (different-color pair 0/3) " + ColorReport(strapA, strapB));
 
                 Directory.CreateDirectory("Logs");
                 File.WriteAllText(OutPath, log.ToString());
@@ -269,7 +269,7 @@ namespace LoopPark.EditorTools
                 const string mouthPath = "Logs/strap_rig_mouth.png";
                 Shoot(prefab, config, a.transform.position, b.transform.position, strapA.MuzzleWorldPosition, 0.30f, mouthPath);
                 Shoot(prefab, config, a.transform.position, b.transform.position, Mid(a, b), 0.42f, "Logs/strap_lighting.png", hideElbows: true);
-                Debug.Log("[StrapRigCheck] 预览图：Logs/strap_rig.png / strap_rig_joint.png / strap_rig_mouth.png");
+                Debug.Log("[StrapRigCheck] Preview images: Logs/strap_rig.png / strap_rig_joint.png / strap_rig_mouth.png");
             }
             finally
             {
@@ -294,18 +294,18 @@ namespace LoopPark.EditorTools
         }
 
         /// <summary>把每根可见套管「当前实际颜色」写成调色资产的逐根默认值（Play 中跑一次即可）。</summary>
-        [MenuItem("LoopPark/绑带/把当前每根套管颜色写入资产 (生成默认值)")]
+        [MenuItem("LoopPark/Straps/Write Each Sleeve Color to Asset (Generate Defaults)")]
         public static void CaptureCurrentHoseColors()
         {
             var tuning = AssetDatabase.LoadAssetAtPath<StrapTuningConfig>(TuningPath);
-            if (tuning == null) { Debug.LogError("[StrapRigCheck] 缺少 " + TuningPath); return; }
+            if (tuning == null) { Debug.LogError("[StrapRigCheck] Missing " + TuningPath); return; }
             var straps = Object.FindObjectsByType<CarStrap>(FindObjectsSortMode.None);
             var list = new List<CarStrap>(straps);
             var log = new StringBuilder();
             int count = CaptureHoseColors(list, tuning, log);
             EditorUtility.SetDirty(tuning);
             AssetDatabase.SaveAssets();
-            Debug.Log("[StrapRigCheck] 已把 " + count + " 根套管的当前颜色写入 " + TuningPath + "\n" + log);
+            Debug.Log("[StrapRigCheck] Wrote " + count + " sleeves current colors written to " + TuningPath + "\n" + log);
         }
 
         /// <summary>逐根读取渲染器属性块里的 _Color，写进资产的 hoses 列表（key = 这一根的唯一编号）。</summary>
@@ -331,7 +331,7 @@ namespace LoopPark.EditorTools
         }
 
         /// <summary>验证「每根生成的套管各自可调」：只给其中一根指定颜色，另一根必须保持车漆色。</summary>
-        [MenuItem("LoopPark/绑带/验证单根调色")]
+        [MenuItem("LoopPark/Straps/Verify Single Sleeve Tint")]
         public static void VerifyPerHose()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
@@ -339,7 +339,7 @@ namespace LoopPark.EditorTools
             var tuning = AssetDatabase.LoadAssetAtPath<StrapTuningConfig>(TuningPath);
             if (prefab == null || config == null || tuning == null)
             {
-                Debug.LogError("[StrapRigCheck] 缺少 prefab / SkinConfig / StrapTuning.asset");
+                Debug.LogError("[StrapRigCheck] Missing prefab / SkinConfig / StrapTuning.asset");
                 return;
             }
 
@@ -361,22 +361,22 @@ namespace LoopPark.EditorTools
                 tuning.SetHoseColor("L1_0", Color.magenta);
                 sa.SetLinked(true, sb);
                 sb.SetLinked(true, sa);
-                log.AppendLine("① 只给 L1_0 指定洋红 → " + ColorReport(sa, sb));
+                log.AppendLine("1) Only L1_0 set to magenta -> " + ColorReport(sa, sb));
 
                 // 关键口径：调色只改「代码生成的套管」，美术吸盘/弯头必须保持车漆色
                 Color elbowB = ElbowColor(sb), sleeveB = SleeveColor(sb, true), sleeveA = SleeveColor(sa, true);
-                log.AppendLine("   套管B=洋红:" + (SameColor(sleeveB, Color.magenta) ? "PASS" : "FAIL")
-                               + " 弯头B=本车车漆色(未被染色):" + (SameColor(elbowB, Palette.Get(3)) ? "PASS" : "FAIL")
-                               + " 套管A=本车车漆色:" + (SameColor(sleeveA, Palette.Get(0)) ? "PASS" : "FAIL"));
+                log.AppendLine("   SleeveB=magenta:" + (SameColor(sleeveB, Color.magenta) ? "PASS" : "FAIL")
+                               + " ElbowB=car paint (not tinted):" + (SameColor(elbowB, Palette.Get(3)) ? "PASS" : "FAIL")
+                               + " SleeveA=car paint (not tinted):" + (SameColor(sleeveA, Palette.Get(0)) ? "PASS" : "FAIL"));
 
                 // ② 把「当前颜色」写成逐根默认值：两根都应各自记下现在的颜色
                 var list = new List<CarStrap> { sa, sb };
                 tuning.ClearHoseColor("L0_0");
                 tuning.ClearHoseColor("L1_0");
                 int captured = CaptureHoseColors(list, tuning, log);
-                log.AppendLine("② 写入默认值条数 = " + captured
-                               + "（L0_0 存在=" + tuning.TryGetHoseColor("L0_0", out Color c0) + "=" + c0.ToString("F3")
-                               + "，L1_0 存在=" + tuning.TryGetHoseColor("L1_0", out Color c1) + "=" + c1.ToString("F3") + "）");
+                log.AppendLine("2) Default entries written = " + captured
+                               + "(L0_0 exists=" + tuning.TryGetHoseColor("L0_0", out Color c0) + "=" + c0.ToString("F3")
+                               + ", L1_0 exists=" + tuning.TryGetHoseColor("L1_0", out Color c1) + "=" + c1.ToString("F3") + "）");
             }
             finally
             {
@@ -389,7 +389,7 @@ namespace LoopPark.EditorTools
 
             Directory.CreateDirectory("Logs");
             File.WriteAllText("Logs/strap_hose_color.txt", log.ToString());
-            Debug.Log("[StrapRigCheck] 单根调色验证写到 Logs/strap_hose_color.txt\n" + log);
+            Debug.Log("[StrapRigCheck] Single-sleeve tint verification written to Logs/strap_hose_color.txt\n" + log);
         }
 
         /// <summary>生成一辆车（姿态与预览一致：同款缩放、同款俯仰）。</summary>
@@ -489,16 +489,16 @@ namespace LoopPark.EditorTools
         static string SleeveShader(CarStrap strap)
         {
             var hose = strap.Hose;
-            if (hose == null) return "<没有套管>";
+            if (hose == null) return "<no sleeve>";
             var renderer = hose.GetComponent<MeshRenderer>();
-            if (renderer == null || renderer.sharedMaterial == null) return "<没有材质>";
+            if (renderer == null || renderer.sharedMaterial == null) return "<no material>";
             var m = renderer.sharedMaterial;
-            if (m.shader == null) return "<shader 为空>";
+            if (m.shader == null) return "<shader is null>";
             return m.shader.name
                    + " gloss=" + m.GetFloat("_Glossiness").ToString("F2")
                    + " spec=" + m.GetColor("_SpecColor")
-                   + " mainTex=" + (m.GetTexture("_MainTex") != null ? "有" : "空")
-                   + " bump=" + (m.GetTexture("_BumpMap") != null ? "有" : "空");
+                   + " mainTex=" + (m.GetTexture("_MainTex") != null ? "Yes" : "Empty")
+                   + " bump=" + (m.GetTexture("_BumpMap") != null ? "Yes" : "Empty");
         }
 
         /// <summary>套管渲染器属性块里的 _Color（start=true）或 _ColorEnd（start=false）。</summary>
@@ -537,10 +537,10 @@ namespace LoopPark.EditorTools
             Color bStart = SleeveColor(b, true), bEnd = SleeveColor(b, false);
             bool Same(Color x, Color y) =>
                 Mathf.Abs(x.r - y.r) < 1e-3f && Mathf.Abs(x.g - y.g) < 1e-3f && Mathf.Abs(x.b - y.b) < 1e-3f;
-            return "弯头A=" + elbowA.ToString("F3") + " 弯头B=" + elbowB.ToString("F3")
-                   + " | 套管A=" + aStart.ToString("F3") + " 套管B=" + bStart.ToString("F3")
-                   + " | 管身单色(起=终):" + (Same(aStart, aEnd) && Same(bStart, bEnd) ? "PASS" : "FAIL")
-                   + " 每根各自独立:" + (!Same(aStart, bStart) ? "PASS(两根不同色)" : "同色");
+            return "ElbowA=" + elbowA.ToString("F3") + " ElbowB=" + elbowB.ToString("F3")
+                   + " | SleeveA=" + aStart.ToString("F3") + " SleeveB=" + bStart.ToString("F3")
+                   + " | Hose single-color (start=end):" + (Same(aStart, aEnd) && Same(bStart, bEnd) ? "PASS" : "FAIL")
+                   + " each sleeve independent:" + (!Same(aStart, bStart) ? "PASS (two sleeves differ)" : "Same color");
         }
 
         /// <summary>弯头顶点到吸盘轴心的最近距离：等于脚半径说明竖脚仍插在吸盘孔里。</summary>

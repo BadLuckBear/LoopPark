@@ -773,6 +773,8 @@ namespace LoopPark
             car.SetLayer(30);
             car.PlayEvent("tap");
             car.SetIdle(false);
+            // 「车从下面开上去」那一下：等车真的开始沿发车路径起步时才响，而不是点击的瞬间。
+            Sfx.Play("start");
             DriveToMerge(car, QueueEntranceS, mergeS, departurePath, distance);
         }
 
@@ -959,7 +961,8 @@ namespace LoopPark
 
             var c = new List<CarView>(cols[j].GetRange(first, Level.capacity));
             var survivors = new List<CarView>(cols[j].GetRange(0, first));
-            Sfx.Play("clear");
+            // 一队车收走：收走几辆就播几次，间隔由 SkinConfig.clearSfxSpacing 控制（0 = 同时）。
+            Sfx.PlayRepeated("clear", c.Count, SkinConfig.Instance.clearSfxSpacing);
             Sfx.Vibrate();
             foreach (var car in c)
             {
@@ -1232,7 +1235,7 @@ namespace LoopPark
                 if (mergingCar != car) return;
                 Debug.Assert(loopCars.TrueForAll(other =>
                     track.Forward(other.s, s) >= spacing - 0.001f * cell &&
-                    track.Forward(s, other.s) >= spacing - 0.001f * cell), "并线完成时环道车距不足");
+                    track.Forward(s, other.s) >= spacing - 0.001f * cell), "Not enough spacing on the loop when the merge finished");
                 car.s = s;
                 car.state = CarState.OnLoop;
                 loopSpeeds.Add(car, loopSpeed);
@@ -1254,7 +1257,7 @@ namespace LoopPark
             float distance = track.DeparturePath(chosen.transform.localPosition, s, departurePath);
             if (!CanStartMerge(s, CarView.DepartureTime(distance, loopSpeed), reservationStart: startS)) return;
             Debug.Assert(lanes[chosen.lane].Count > 0 && lanes[chosen.lane][0] == chosen,
-                "待发车辆必须仍在车道队首");
+                "A queued car must still be at the front of its lane");
             queued.RemoveAt(0);
             Dispatch(chosen.lane, s, distance);
         }
@@ -1650,7 +1653,7 @@ namespace LoopPark
             curtainGo[j] = null;
             foreach (var car in cols[j]) car.gameObject.SetActive(true);
             RevealEnds(j);
-            Sfx.Play("clear", 1.3f);
+            Sfx.Play("unlock", 1.3f);
             Emit("curtainopen", null);
             stuckTimer = 0;
             if (go == null) yield break;
@@ -1726,7 +1729,7 @@ namespace LoopPark
             var view = go.GetComponent<ContainerView>();
             if (view == null)
             {
-                Debug.LogError("[LoopPark] containerPrefab 上没有 ContainerView，回退 2D 集装箱", prefab);
+                Debug.LogError("[LoopPark] containerPrefab has no ContainerView; falling back to 2D container", prefab);
                 Destroy(go);
                 return false;
             }
@@ -1765,7 +1768,7 @@ namespace LoopPark
                 garageGo[j] = null;
                 foreach (var car in cols[j]) car.gameObject.SetActive(Covered(j) == false || curtainLeft[j] <= 0);
                 RevealEnds(j);
-                Sfx.Play("clear", 1.2f);
+                Sfx.Play("unlock", 1.2f);
                 Emit("garageopen", null);
                 if (Verbose) Debug.Log($"[LoopPark] garage open col{j} color{color}");
                 stuckTimer = 0;
@@ -1840,7 +1843,7 @@ namespace LoopPark
                     if (iceGo[j] != null) Destroy(iceGo[j]);
                     iceGo[j] = null;
                     RevealEnds(j);
-                    Sfx.Play("clear", 1.5f);
+                    Sfx.Play("unlock", 1.5f);
                     Emit("icebreak", null);
                     if (Verbose) Debug.Log($"[LoopPark] ice break col{j}");
                     stuckTimer = 0;
@@ -1874,7 +1877,7 @@ namespace LoopPark
         {
             if (elevatorText[j] == null) return;
             int left = Level.columns[j].levels.Count - levelIdx[j];
-            elevatorText[j].text = left > 0 ? "电梯 " + left : "";
+            elevatorText[j].text = left > 0 ? "Lift " + left : "";
             if (left <= 0 && elevatorPlate[j] != null) { Destroy(elevatorPlate[j]); elevatorPlate[j] = null; }
         }
 

@@ -8,17 +8,17 @@ namespace LoopPark
     /// </summary>
     public class CarSkin3D : MonoBehaviour, ICarSkin
     {
-        [Tooltip("可选：绑带等附件，按名字开关")]
+        [Tooltip("Optional: attachments such as straps, toggled by name")]
         public GameObject[] accessories;
-        [Tooltip("可选：Animator，收到事件时 SetTrigger(事件名)")]
+        [Tooltip("Optional: Animator; receives SetTrigger(event name) on events")]
         public Animator animator;
-        [Tooltip("模型节点（用于点头/侧倾动画）")]
+        [Tooltip("Model node (for nod / tilt animation)")]
         public Transform body;
-        [Tooltip("问号车布料覆盖层；由车辆模型配置工具自动绑定。")]
+        [Tooltip("Mystery car cloth cover layer; bound automatically by the car model setup tool.")]
         public CarRevealCover revealCover;
-        [Tooltip("绑带车车顶附件（吸盘+软管）；由车辆模型配置工具自动绑定。")]
+        [Tooltip("Strap roof attachment (suction cups + hose); bound automatically by the car model setup tool.")]
         public CarStrap strap;
-        [Tooltip("车辆外观共享配置；颜色、车窗、灯条和光泽均以此资源为准，可在播放时调整。")]
+        [Tooltip("Shared car appearance config; colors, windows, light strips and gloss all come from this asset and can be tuned while playing.")]
         public SkinConfig appearance;
 
         static readonly int ColorId = Shader.PropertyToID("_Color");

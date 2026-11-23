@@ -15,20 +15,20 @@ namespace LoopPark.EditorTools
         float departureSpacing = 1f;
         int selectedLevel = 1;
 
-        [MenuItem("LoopPark/玩法区域布局（运行时）")]
-        public static void Open() => GetWindow<BoardLayoutWindow>("玩法区域布局");
+        [MenuItem("LoopPark/Play Area Layout (Runtime)")]
+        public static void Open() => GetWindow<BoardLayoutWindow>("Play area layout");
 
         void OnGUI()
         {
             var game = GameController.I;
             if (!Application.isPlaying || game == null || game.Level == null)
             {
-                EditorGUILayout.HelpBox("请先运行游戏并进入一个关卡。", MessageType.Info);
+                EditorGUILayout.HelpBox("Enter Play mode and load a level first.", MessageType.Info);
                 return;
             }
 
-            selectedLevel = EditorGUILayout.IntSlider(new GUIContent("编辑关卡"), selectedLevel, 1, LevelRepository.MaxLevel);
-            if (GUILayout.Button("加载并编辑该关卡"))
+            selectedLevel = EditorGUILayout.IntSlider(new GUIContent("Level to edit"), selectedLevel, 1, LevelRepository.MaxLevel);
+            if (GUILayout.Button("Load and Edit This Level"))
             {
                 if (UIManager.I != null) UIManager.I.StartLevel(selectedLevel);
                 else game.StartLevel(LevelRepository.Get(selectedLevel));
@@ -39,7 +39,7 @@ namespace LoopPark.EditorTools
                 departureSpacing = game.DepartureSpacing;
             }
 
-            if (GUILayout.Button("读取当前关卡布局"))
+            if (GUILayout.Button("Read Current Level Layout"))
             {
                 selectedLevel = game.Level.id;
                 scale = game.BoardScale;
@@ -48,18 +48,18 @@ namespace LoopPark.EditorTools
                 departureSpacing = game.DepartureSpacing;
             }
 
-            scale = EditorGUILayout.Slider(new GUIContent("区域缩放", "调整玩法区域整体尺寸。"), scale, 0.5f, 2f);
-            position = EditorGUILayout.Vector2Field(new GUIContent("区域位置", "调整玩法区域在世界坐标中的位置。"), position);
-            parkingSpacing = EditorGUILayout.Slider(new GUIContent("上方停车区车辆间距", "调整停车列和环道中的车辆间距。"), parkingSpacing, 0.6f, 1.5f);
-            departureSpacing = EditorGUILayout.Slider(new GUIContent("下方发车区车辆间距", "调整下方发车队列的车辆间距。"), departureSpacing, 0.6f, 1.5f);
+            scale = EditorGUILayout.Slider(new GUIContent("Area scale", "Adjusts the overall play area size."), scale, 0.5f, 2f);
+            position = EditorGUILayout.Vector2Field(new GUIContent("Area position", "Adjusts the play area position in world space."), position);
+            parkingSpacing = EditorGUILayout.Slider(new GUIContent("Upper parking area car spacing", "Adjusts car spacing in parking columns and on the loop."), parkingSpacing, 0.6f, 1.5f);
+            departureSpacing = EditorGUILayout.Slider(new GUIContent("Lower departure area car spacing", "Adjusts car spacing in the lower departure queue."), departureSpacing, 0.6f, 1.5f);
 
             using (new EditorGUI.DisabledScope(!Application.isPlaying))
             {
-                if (GUILayout.Button("应用到当前运行关卡"))
+                if (GUILayout.Button("Apply to Running Level"))
                     game.ApplyBoardLayout(scale, position, parkingSpacing, departureSpacing);
             }
 
-            if (GUILayout.Button("保存到关卡资源"))
+            if (GUILayout.Button("Save to Level Asset"))
             {
                 // Apply first so the values being saved are also visible in the running game.
                 game.ApplyBoardLayout(scale, position, parkingSpacing, departureSpacing);
@@ -83,7 +83,7 @@ namespace LoopPark.EditorTools
             File.WriteAllText(path, JsonUtility.ToJson(data, true));
             LevelRepository.Invalidate(data.id);
             AssetDatabase.Refresh();
-            Debug.Log($"[LoopPark] 已保存关卡 {data.id} 的玩法区域布局：缩放 {data.boardScale:0.###}，位置 {data.boardPosition}，停车区间距 {data.parkingSpacing:0.###}，发车区间距 {data.departureSpacing:0.###}");
+            Debug.Log($"[LoopPark] Saved play area layout for level {data.id}: scale {data.boardScale:0.###}, position {data.boardPosition}, parking spacing {data.parkingSpacing:0.###}, departure spacing {data.departureSpacing:0.###}");
         }
     }
 }

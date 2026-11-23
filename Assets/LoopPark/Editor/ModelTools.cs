@@ -6,7 +6,7 @@ namespace LoopPark.EditorTools
 {
     public static class ModelTools
     {
-        [MenuItem("LoopPark/检查车辆模型")]
+        [MenuItem("LoopPark/Check Car Model")]
         public static void Inspect()
         {
             var go = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/LoopPark/Resources/Model/car.fbx");

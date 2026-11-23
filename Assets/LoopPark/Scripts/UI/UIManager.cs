@@ -84,7 +84,7 @@ namespace LoopPark
             if (!Application.CanStreamedLevelBeLoaded(homeScene))
             {
                 Debug.LogError("[LoopPark] Home scene is missing from the build.");
-                ShowTip("当前版本缺少主页，请更新游戏", 2f);
+                ShowTip("This version is missing the home scene; please update the game", 2f);
                 return;
             }
             popupBackStack.Clear();
@@ -138,7 +138,7 @@ namespace LoopPark
             EventTrack.UeShow("game");
             hudLevel.text = $"Level {n}";
             hudDiffBg.gameObject.SetActive(data.difficulty > 0);
-            hudDiff.text = data.difficulty == 2 ? "超难" : "困难";
+            hudDiff.text = data.difficulty == 2 ? "SUPER HARD" : "HARD";
             hudDiffBg.color = data.difficulty == 2 ? new Color(0.6f, 0.25f, 0.85f) : new Color(0.9f, 0.25f, 0.3f);
             RefreshBars();
             tutorial.OnLevelStart(data);
@@ -191,7 +191,7 @@ namespace LoopPark
             int i = (int)b;
             if (!game.CanUseBooster(b))
             {
-                ShowTip(b == Booster.Reveal ? "现在没有问号车" : "车辆移动中，稍后再试", 1.5f);
+                ShowTip(b == Booster.Reveal ? "No mystery car right now" : "A car is moving, try again in a moment", 1.5f);
                 return;
             }
             if (d.boosters[i] <= 0)
@@ -299,7 +299,7 @@ namespace LoopPark
             UIKit.Place((RectTransform)music.transform, new Vector2(.5f, .5f), new Vector2(-250, 285), new Vector2(176, 176));
             UIKit.Place((RectTransform)sound.transform, new Vector2(.5f, .5f), new Vector2(0, 285), new Vector2(176, 176));
             UIKit.Place((RectTransform)vibration.transform, new Vector2(.5f, .5f), new Vector2(250, 285), new Vector2(176, 176));
-            ModalBtn(card, "Contact us", SkinConfig.Instance.secondaryButton, () => Application.OpenURL("mailto:support@looppark.game?subject=LoopPark%20Support"), 760);
+            ModalBtn(card, "Contact us", SkinConfig.Instance.secondaryButton, AppLinks.OpenSupportMail, 760);
 
             var language = ModalBtn(card, string.IsNullOrEmpty(d.language) ? "English" : d.language, SkinConfig.Instance.primaryButton, null, 500, 624);
             var languageIcon = UIKit.Img(language.transform, "LanguageIcon", Color.white, UIKit.Art("icon_language"), false);
@@ -309,7 +309,7 @@ namespace LoopPark
             var menu = UIKit.Img(card, "LanguageMenu", Color.white, UIKit.Art("Rectangle 630"));
             UIKit.Place(menu.rectTransform, new Vector2(.5f, .5f), new Vector2(0, -485), new Vector2(520, 430));
             menu.gameObject.SetActive(false);
-            var languageNames = new[] { "English", "Français", "Deutsch", "Italiano", "日本語" };
+            var languageNames = new[] { "English", "Français", "Deutsch", "Italiano", "Japanese" };
             for (int i = 0; i < languageNames.Length; i++)
             {
                 int index = i;
@@ -326,8 +326,9 @@ namespace LoopPark
 
             var meta = UIKit.Txt(card, $"UID:{SystemInfo.deviceUniqueIdentifier.GetHashCode():X6}\nversion {Application.version}", 34, new Color(.75f, .82f, 1f), TextAnchor.MiddleCenter);
             UIKit.Place(meta.rectTransform, new Vector2(.5f, 0), new Vector2(0, 270), new Vector2(600, 130));
-            var privacy = ModalBtn(card, "Privacy Policy", new Color(.45f, .62f, .95f), () => Application.OpenURL("mailto:support@looppark.game?subject=Privacy%20Policy"), 145, 420);
-            var leave = ModalBtn(card, "退出关卡", SkinConfig.Instance.dangerButton, () =>
+            // 设置面板里的隐私政策文字按钮：跳在线隐私政策页，不再开邮件。
+            var privacy = ModalBtn(card, "Privacy Policy", new Color(.45f, .62f, .95f), AppLinks.OpenPrivacyPolicy, 145, 420);
+            var leave = ModalBtn(card, "Leave Level", SkinConfig.Instance.dangerButton, () =>
             {
                 PushPopupBack(ShowPause);
                 ConfirmLeave(() =>
@@ -427,18 +428,23 @@ namespace LoopPark
             game.Paused = true;
 
             var view = modal.AddComponent<SettlementModalView>();
-            var doubleLabel = $"双倍领取 +{reward}（广告）";
-            var continueLabel = currentLevel == LevelRepository.MaxLevel ? "返回主页" : "继续";
-            if (!view.Bind(reward, doubleLabel, continueLabel,
+            // 双倍按钮标题（"X2 Coin"）由 prefab 里的 Text 决定，这里只灌数值与「继续」文案，
+            // 避免长句覆盖掉美术排好的两行布局。
+            var continueLabel = currentLevel == LevelRepository.MaxLevel ? "Back to Home" : "Continue";
+            if (!view.Bind(reward, continueLabel,
                 () =>
                 {
                     Ads.Service.ShowRewarded(ok =>
                     {
-                        if (ok) SaveSystem.AddCoins(reward);
+                        if (ok)
+                        {
+                            SaveSystem.AddCoins(reward);
+                            Sfx.Play("coin"); // 广告双倍到账，同样是「金币增加」
+                        }
                         view.SetDoubleButtonInteractable(false);
-                        ShowTip(ok ? $"额外获得 {reward} 金币" : "广告未完成", 1.5f);
+                        ShowTip(ok ? $"Extra {reward} coins" : "Ad not completed", 1.5f);
                     }, "win_double_coins", currentLevel);
-                }, ShowHome))
+                }, ContinueFromSettlement))
             {
                 CloseModal();
                 return;
@@ -446,6 +452,24 @@ namespace LoopPark
 
             var card = modal.transform.Find("Card") as RectTransform;
             if (card) FxBurstUI(card);
+            // 金币入账提示：等结算卡片的 PopIn（0.25s）落定再响，避免和胜利音效叠成一团。
+            StartCoroutine(CoinCueAfterPopIn(0.25f));
+        }
+
+        IEnumerator CoinCueAfterPopIn(float delay)
+        {
+            yield return new WaitForSecondsRealtime(delay);
+            Sfx.Play("coin");
+        }
+
+        /// <summary>
+        /// 过关结算的「继续」：连续闯关区（前 10 关）原地进入下一关，不打断流程回主界面；
+        /// 区间外或最后一关则回主界面。下一关取 currentLevel + 1，与 OnWin 里推进的存档进度一致。
+        /// </summary>
+        void ContinueFromSettlement()
+        {
+            if (LevelFlow.ShouldContinueInPlace(currentLevel)) StartLevel(currentLevel + 1);
+            else ShowHome();
         }
 
         void FxBurstUI(RectTransform card)
@@ -578,19 +602,19 @@ namespace LoopPark
         void ShowGM()
         {
             bool inGame = hud.activeSelf && game.Level != null;
-            var card = OpenModal("GM 工具", new Color(0.85f, 0.35f, 0.2f), 1260);
+            var card = OpenModal("GM Tools", new Color(0.85f, 0.35f, 0.2f), 1260);
             if (inGame) game.Paused = true;
             var d = SaveSystem.D;
-            var info = UIKit.Txt(card, $"当前进度 第 {d.level} 关   金币 {d.coins}   体力 {d.lives}", 36, new Color(0.3f, 0.25f, 0.2f));
+            var info = UIKit.Txt(card, $"Level {d.level}   Coins {d.coins}   Lives {d.lives}", 36, new Color(0.3f, 0.25f, 0.2f));
             UIKit.Place(info.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -175), new Vector2(820, 60));
 
             // 跳关
-            var input = UIKit.NumberInput(card, $"关卡号 1~{LevelRepository.MaxLevel}", 48);
+            var input = UIKit.NumberInput(card, $"Level number 1~{LevelRepository.MaxLevel}", 48);
             UIKit.Place((RectTransform)input.transform, new Vector2(0.5f, 1), new Vector2(-150, -280), new Vector2(460, 120));
             input.text = (inGame ? currentLevel : d.level).ToString();
-            var go = UIKit.Btn(card, "跳转", SkinConfig.Instance.secondaryButton, () =>
+            var go = UIKit.Btn(card, "Go", SkinConfig.Instance.secondaryButton, () =>
             {
-                if (!int.TryParse(input.text, out var n) || n < 1 || n > LevelRepository.MaxLevel) { ShowTip("请输入正确的关卡号", 1.5f); return; }
+                if (!int.TryParse(input.text, out var n) || n < 1 || n > LevelRepository.MaxLevel) { ShowTip("Enter a valid level number", 1.5f); return; }
                 SaveSystem.D.level = n;
                 SaveSystem.D.bestLevel = Mathf.Max(SaveSystem.D.bestLevel, n);
                 SaveSystem.Save();
@@ -606,32 +630,32 @@ namespace LoopPark
                 y -= 135;
                 return b;
             }
-            var pass = Row("通过本关", SkinConfig.Instance.primaryButton, () =>
+            var pass = Row("Pass This Level", SkinConfig.Instance.primaryButton, () =>
             {
                 CloseModal();
                 game.ForceWin();
             });
             pass.interactable = inGame && !game.Ended;
-            Row("金币 +1000", new Color(0.95f, 0.65f, 0.15f), () => { SaveSystem.AddCoins(1000); ShowGM(); });
-            Row("道具各 +5", new Color(0.6f, 0.4f, 0.9f), () =>
+            Row("Coins +1000", new Color(0.95f, 0.65f, 0.15f), () => { SaveSystem.AddCoins(1000); ShowGM(); });
+            Row("Boosters +5 Each", new Color(0.6f, 0.4f, 0.9f), () =>
             {
                 for (int i = 0; i < SaveSystem.D.boosters.Length; i++) SaveSystem.D.boosters[i] += 5;
                 SaveSystem.Save();
                 ShowGM();
             });
-            Row("体力补满", new Color(0.92f, 0.33f, 0.4f), () =>
+            Row("Refill Lives", new Color(0.92f, 0.33f, 0.4f), () =>
             {
                 SaveSystem.D.lives = Economy.MaxLives;
                 SaveSystem.Save();
                 ShowGM();
             });
-            Row("重置引导提示", new Color(0.4f, 0.55f, 0.75f), () =>
+            Row("Reset Tutorial Hints", new Color(0.4f, 0.55f, 0.75f), () =>
             {
                 SaveSystem.D.tips.Clear();
                 SaveSystem.Save();
-                ShowTip("引导提示已重置", 1.5f);
+                ShowTip("Tutorial hints reset", 1.5f);
             });
-            ModalBtn(card, "关闭", new Color(0.6f, 0.6f, 0.65f), CloseModal, 70, 420);
+            ModalBtn(card, "Close", new Color(0.6f, 0.6f, 0.65f), CloseModal, 70, 420);
         }
 
         /// <summary>命令行 -lp_gmtest：自动执行 GM 功能并输出日志（测试用）。</summary>

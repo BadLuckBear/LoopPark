@@ -148,7 +148,7 @@ namespace Game.Sdk.Impl.ShuYuan
         {
             if (SDK == null || _slots == null)
             {
-                Warn("ShowReward: SDK 未就绪");
+                Warn("ShowReward: SDK not ready");
                 Dispatch(Failed(SdkAdFormat.Reward, _slots == null ? null : _slots.RewardId), onClose);
                 return;
             }
@@ -159,7 +159,7 @@ namespace Game.Sdk.Impl.ShuYuan
             {
                 var e = SYEventParser.ToAd(state, json, SdkAdFormat.Reward,
                                            SdkAdPhase.Closed, _slots.RewardId);
-                Log("ShowReward 回调 success=" + e.Success + "（true=看完可发奖）");
+                Log("ShowReward callback success=" + e.Success + "(true = rewardable after a full view)");
                 Dispatch(e, onClose);
                 LoadReward();   // 播完重载下一条
             });
@@ -198,7 +198,7 @@ namespace Game.Sdk.Impl.ShuYuan
         {
             if (SDK == null || _slots == null)
             {
-                Warn("ShowInterstitial: SDK 未就绪");
+                Warn("ShowInterstitial: SDK not ready");
                 Dispatch(Failed(SdkAdFormat.Interstitial, _slots == null ? null : _slots.InterstitialId), onClose);
                 return;
             }
@@ -209,7 +209,7 @@ namespace Game.Sdk.Impl.ShuYuan
             {
                 var e = SYEventParser.ToAd(state, json, SdkAdFormat.Interstitial,
                                            SdkAdPhase.Closed, _slots.InterstitialId);
-                Log("ShowInterstitial 回调 success=" + e.Success);
+                Log("ShowInterstitial callback success=" + e.Success);
                 Dispatch(e, onClose);
                 LoadInterstitial();
             });
@@ -249,7 +249,7 @@ namespace Game.Sdk.Impl.ShuYuan
         {
             if (SDK == null || _slots == null)
             {
-                Warn("ShowBanner: SDK 未就绪");
+                Warn("ShowBanner: SDK not ready");
                 Dispatch(Failed(SdkAdFormat.Banner, _slots == null ? null : _slots.BannerId), onResult);
                 return;
             }
@@ -321,14 +321,14 @@ namespace Game.Sdk.Impl.ShuYuan
 
             if (isReady())
             {
-                if (attempt > 0) Log(what + " 已就绪（第 " + attempt + " 次续拉后）");
+                if (attempt > 0) Log(what + " ready (after " + attempt + " retry attempts)");
                 setPumping(false);
                 return;
             }
 
             if (attempt >= MaxLoadAttempts)
             {
-                Warn(what + " 续拉 " + MaxLoadAttempts + " 次仍未就绪，停止（请检查广告位配置与网络）");
+                Warn(what + " retried " + MaxLoadAttempts + " retries and still not ready, stopped (check ad unit config and network)");
                 setPumping(false);
                 return;
             }
@@ -360,7 +360,7 @@ namespace Game.Sdk.Impl.ShuYuan
                 }
                 catch (Newtonsoft.Json.JsonReaderException)
                 {
-                    Warn("customData 不是 JSON 对象，无法合并默认字段，原样透传: " + customData);
+                    Warn("customData is not a JSON object; cannot merge default fields, passing through as-is: " + customData);
                     return customData;
                 }
             }

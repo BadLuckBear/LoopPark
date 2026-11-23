@@ -18,22 +18,22 @@ namespace LoopPark
         /// <summary>整体车衣节点名，爆衣期间隐藏。</summary>
         public const string StaticCoverNodeName = "Buliao";
 
-        [Header("衣片节点")]
-        [Tooltip("拆分衣片根节点；留空时按子节点名 BuliaoPosui 自动查找。")]
+        [Header("Shard nodes")]
+        [Tooltip("Split shard root; when empty, auto-found by child name BuliaoPosui.")]
         public Transform shardRoot;
-        [Tooltip("整体车衣节点；爆衣开始时隐藏，避免和衣片同时显示。留空按子节点名 Buliao 查找。")]
+        [Tooltip("Whole-cover node; hidden when the burst starts so it does not show with the shards. Empty = found by child name Buliao.")]
         public GameObject staticCover;
 
-        [Header("炸开参数（单位：车衣本地空间，车衣长约 1.12）")]
-        [Tooltip("衣片沿径向（车衣 x/z 平面）飞出的基础距离。")]
+        [Header("Burst params (units: cover local space, cover length about 1.12)")]
+        [Tooltip("Base radial fly-out distance of shards (cover x/z plane).")]
         [SerializeField] float burstDistance = 0.55f;
-        [Tooltip("衣片朝镜头方向（模型 y 轴）抛出的额外距离。")]
+        [Tooltip("Extra distance shards are thrown toward the camera (model y axis).")]
         [SerializeField] float burstLift = 0.12f;
-        [Tooltip("每个衣片的飞出距离倍率区间；按片序伪随机，保证每次播放一致。")]
+        [Tooltip("Per-shard fly-out distance multiplier range; pseudo-random by shard index so playback is consistent.")]
         [SerializeField] Vector2 distanceRange = new Vector2(0.75f, 1.3f);
-        [Tooltip("衣片自旋总角度（度）。")]
+        [Tooltip("Total shard spin angle (degrees).")]
         [SerializeField] float pieceSpin = 220f;
-        [Tooltip("动画末段衣片缩小到的比例；缩到极小后随覆盖层一起隐藏，避免残片停在画面上。")]
+        [Tooltip("Scale the shards shrink to at the end; after shrinking they hide with the cover so nothing lingers on screen.")]
         [Range(0f, 1f)] [SerializeField] float endScale = 0.12f;
 
         // 一片衣片的基准姿态与炸开方向；dir/dist/axis/angle 与片序绑定，播放结果可复现。

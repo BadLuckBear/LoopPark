@@ -44,7 +44,7 @@ namespace Game.Sdk
 
         private void Fire(SdkAdFormat format, string adUnitId, Action<SdkAdEventArgs> cb)
         {
-            Debug.Log("[NullAd] Show " + format + " → 直接成功");
+            Debug.Log("[NullAd] Show " + format + " -> immediate success");
 
             //跟真机时序一致：先推展示成功，再回调终态
             var displayed = new SdkAdEventArgs

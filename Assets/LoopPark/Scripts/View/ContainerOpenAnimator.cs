@@ -13,12 +13,12 @@ namespace LoopPark
     /// </summary>
     public sealed class ContainerOpenAnimator : MonoBehaviour
     {
-        [Header("层级引用")]
-        [Tooltip("顶盖运动节点，动画时沿世界 +Y 平移")]
+        [Header("Hierarchy references")]
+        [Tooltip("Roof motion node; moves along world +Y during the animation")]
         [SerializeField] Transform _roofPivot;
-        [Tooltip("外框（墙体/立柱/角环）运动节点，顶盖收完后沿 +Y 收进顶边")]
+        [Tooltip("Frame (walls / posts / corner rings) node; retracts along +Y into the top edge after the roof folds")]
         [SerializeField] Transform _frameRoot;
-        [Tooltip("解锁提示物根节点，阶段一弹起缩小")]
+        [Tooltip("Unlock prompt prop root; pops up and shrinks in phase one")]
         [SerializeField] Transform _iconRoot;
 
         // 动画时长与行程倍率统一在 LoopParkSkin（SkinConfig）「集装箱外壳：开箱动画时长」里调，
@@ -78,7 +78,7 @@ namespace LoopPark
             if (_opening) return;
             if (!_ready)
             {
-                Debug.LogError("[ContainerOpenAnimator] 未 Initialize，开箱动画被忽略", this);
+                Debug.LogError("[ContainerOpenAnimator] Not initialized, open animation skipped", this);
                 onComplete?.Invoke();
                 return;
             }

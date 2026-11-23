@@ -57,7 +57,7 @@ namespace Game.Sdk
 
         public void RequestReview(Action<SdkEventArgs> onResult)
         {
-            Debug.Log("[NullReview] RequestReview（PC/Editor 不弹）");
+            Debug.Log("[NullReview] RequestReview (not shown on PC/Editor)");
             if (onResult != null)
                 onResult(new SdkPlainEventArgs { Success = false, Code = -1, Message = "null-impl" });
         }
@@ -68,6 +68,6 @@ namespace Game.Sdk
                 onResult(new SdkPlainEventArgs { Success = false, Code = -1, Message = "null-impl" });
         }
 
-        public void ModifyConsent() => Debug.Log("[NullConsent] ModifyConsent（PC/Editor 不弹）");
+        public void ModifyConsent() => Debug.Log("[NullConsent] ModifyConsent (not shown on PC/Editor)");
     }
 }

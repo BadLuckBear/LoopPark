@@ -11,8 +11,8 @@ namespace LoopPark
 
         static readonly string[] Languages =
         {
-            "English", "繁体中文", "Japanese", "French", "Korean", "German", "Italian",
-            "Portuguese", "Spanish", "Arabic", "Indonesian", "Russian", "简体中文"
+            "English", "Chinese (Traditional)", "Japanese", "French", "Korean", "German", "Italian",
+            "Portuguese", "Spanish", "Arabic", "Indonesian", "Russian", "Chinese (Simplified)"
         };
 
         void Start()
@@ -32,7 +32,7 @@ namespace LoopPark
             view.vibrateButton.onClick.AddListener(() => { SaveSystem.D.vibrate = !SaveSystem.D.vibrate; SaveSystem.Save(); Refresh(); });
             if (view.languageButton) view.languageButton.onClick.AddListener(ToggleLanguageMenu);
             if (view.englishButton) view.englishButton.onClick.AddListener(() => SetLanguage("English"));
-            if (view.chineseButton) view.chineseButton.onClick.AddListener(() => SetLanguage("简体中文"));
+            if (view.chineseButton) view.chineseButton.onClick.AddListener(() => SetLanguage("Chinese (Simplified)"));
             if (view.languageOptions != null)
             {
                 for (int i = 0; i < view.languageOptions.Length && i < Languages.Length; i++)
@@ -41,8 +41,9 @@ namespace LoopPark
                     if (view.languageOptions[i]) view.languageOptions[i].onClick.AddListener(() => SetLanguage(Languages[index]));
                 }
             }
-            if (view.contactButton) view.contactButton.onClick.AddListener(() => Application.OpenURL("mailto:support@looppark.game?subject=LoopPark%20Support"));
-            if (view.privacyButton) view.privacyButton.onClick.AddListener(() => Application.OpenURL("mailto:support@looppark.game?subject=Privacy%20Policy"));
+            if (view.contactButton) view.contactButton.onClick.AddListener(AppLinks.OpenSupportMail);
+            // 隐私政策按钮：跳转在线网页（https://ycarm.com/privacy/），供商店审核与玩家查阅。
+            if (view.privacyButton) view.privacyButton.onClick.AddListener(AppLinks.OpenPrivacyPolicy);
             for (int i = 0; i < view.buyButtons.Length; i++)
             {
                 int index = i;
@@ -112,7 +113,7 @@ namespace LoopPark
         {
             Sfx.Play("button");
             if (SaveSystem.D.lives >= Economy.MaxLives) return;
-            if (!SaveSystem.Spend(Economy.RefillLivesCost)) { view.refillMessage.text = "金币不足"; return; }
+            if (!SaveSystem.Spend(Economy.RefillLivesCost)) { view.refillMessage.text = "Not enough coins"; return; }
             SaveSystem.D.lives = Economy.MaxLives;
             SaveSystem.Save();
             ClosePanels();
@@ -165,16 +166,16 @@ namespace LoopPark
                 view.difficulty.text = difficulty == 2 ? "SUPER HARD" : difficulty == 1 ? "HARD" : "";
             }
             RefreshLives();
-            if (view.sound) view.sound.text = d.sound ? "音效：开" : "音效：关";
-            if (view.music) view.music.text = d.music ? "音乐：开" : "音乐：关";
-            if (view.vibrate) view.vibrate.text = d.vibrate ? "震动：开" : "震动：关";
+            if (view.sound) view.sound.text = d.sound ? "Sound: on" : "Sound: off";
+            if (view.music) view.music.text = d.music ? "Music: on" : "Music: off";
+            if (view.vibrate) view.vibrate.text = d.vibrate ? "Vibration: on" : "Vibration: off";
             if (view.language) view.language.text = string.IsNullOrEmpty(d.language) ? "English" : d.language;
             view.RefreshLanguageOptions(d.language);
             if (view.musicButton) view.musicButton.image.color = d.music ? Color.white : new Color(.55f, .55f, .55f, 1f);
             if (view.soundButton) view.soundButton.image.color = d.sound ? Color.white : new Color(.55f, .55f, .55f, 1f);
             if (view.vibrateButton) view.vibrateButton.image.color = d.vibrate ? Color.white : new Color(.55f, .55f, .55f, 1f);
             for (int i = 0; i < view.buyLabels.Length; i++)
-                view.buyLabels[i].text = $"{Economy.BoosterName[i]}  {Economy.BoosterPrice[i]} 金币  ·  拥有 {d.boosters[i]}";
+                view.buyLabels[i].text = $"{Economy.BoosterName[i]}  {Economy.BoosterPrice[i]} coins  ·  owned {d.boosters[i]}";
         }
 
         void ToggleLanguageMenu()
@@ -221,9 +222,9 @@ namespace LoopPark
         {
             switch (language)
             {
-                case SystemLanguage.ChineseTraditional: return "繁体中文";
+                case SystemLanguage.ChineseTraditional: return "Chinese (Traditional)";
                 case SystemLanguage.Chinese:
-                case SystemLanguage.ChineseSimplified: return "简体中文";
+                case SystemLanguage.ChineseSimplified: return "Chinese (Simplified)";
                 case SystemLanguage.Japanese: return "Japanese";
                 case SystemLanguage.French: return "French";
                 case SystemLanguage.Korean: return "Korean";

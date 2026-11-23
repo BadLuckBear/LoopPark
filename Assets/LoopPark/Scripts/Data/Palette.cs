@@ -28,7 +28,7 @@ namespace LoopPark
             Hex("191BEE"), // 14 原始 15：蓝
         };
 
-        public static readonly string[] Names = { "红", "黄", "青绿", "浅蓝", "绿", "棕", "淡紫", "粉", "橙", "黑", "紫", "品红", "白", "奶油", "蓝" };
+        public static readonly string[] Names = { "Red", "Yellow", "Teal", "Light blue", "Green", "Brown", "Lilac", "Pink", "Orange", "Black", "Purple", "Magenta", "White", "Cream", "Blue" };
 
         public static Color[] Colors
         {

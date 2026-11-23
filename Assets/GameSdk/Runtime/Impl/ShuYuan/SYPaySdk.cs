@@ -41,13 +41,13 @@ namespace Game.Sdk.Impl.ShuYuan
 
             if (SDK == null)
             {
-                Warn("Subscribe: SDK.Instance 为空，订阅失败");
+                Warn("Subscribe: SDK.Instance is null, subscription failed");
                 return;
             }
 
             SDK.OnPurchaseSucceeded += OnSdkPurchaseSucceeded;
             _subscribed = true;
-            Log("已订阅 ShuYuanSDK.OnPurchaseSucceeded（唯一发货入口）");
+            Log("Subscribed to ShuYuanSDK.OnPurchaseSucceeded (single delivery entry)");
         }
 
         private void OnSdkPurchaseSucceeded(SYPurchaseItem[] items)
@@ -81,7 +81,7 @@ namespace Game.Sdk.Impl.ShuYuan
         {
             if (SDK == null)
             {
-                Warn("InitProducts: SDK.Instance 为空");
+                Warn("InitProducts: SDK.Instance is null");
                 if (onDone != null)
                 {
                     onDone(new SdkProductEventArgs
@@ -108,7 +108,7 @@ namespace Game.Sdk.Impl.ShuYuan
                         _localizedPrice[p.ProductId] = p.FullPrice;
                 }
 
-                Log("InitProducts 回调 success=" + e.Success + " 价格缓存=" + _localizedPrice.Count);
+                Log("InitProducts callback success=" + e.Success + " price cache=" + _localizedPrice.Count);
                 if (onDone != null) onDone(e);
             });
         }
@@ -117,7 +117,7 @@ namespace Game.Sdk.Impl.ShuYuan
         {
             if (SDK == null)
             {
-                Warn("Purchase: SDK.Instance 为空");
+                Warn("Purchase: SDK.Instance is null");
                 if (onImmediate != null)
                     onImmediate(new SdkPlainEventArgs { Success = false, Code = -1, Message = "sdk instance null" });
                 return;
@@ -129,7 +129,7 @@ namespace Game.Sdk.Impl.ShuYuan
             {
                 // 发货统一走 OnPurchaseSucceeded，这里只回 UX（关 loading 等）
                 var e = SYEventParser.ToBase(state, json);
-                Log("Purchase 回调 success=" + e.Success + " code=" + e.Code + "（发货走全局事件）");
+                Log("Purchase callback success=" + e.Success + " code=" + e.Code + "(delivery goes through global events)");
                 if (onImmediate != null) onImmediate(e);
             });
         }
@@ -138,19 +138,19 @@ namespace Game.Sdk.Impl.ShuYuan
         {
             if (SDK == null) return;
 
-            Log("Restore（未消费订单将逐笔走 OnPurchaseSucceeded）");
-            SDK.RestorePurchases((state, json) => Log("Restore 回调 state=" + state));
+            Log("Restore (unconsumed orders go through OnPurchaseSucceeded one by one)");
+            SDK.RestorePurchases((state, json) => Log("Restore callback state=" + state));
         }
 
         public void Consume(string purchaseToken)
         {
             if (SDK == null || string.IsNullOrEmpty(purchaseToken))
             {
-                Warn("Consume: SDK 为空或 purchaseToken 为空");
+                Warn("Consume: SDK is null or purchaseToken is empty");
                 return;
             }
 
-            SDK.ConsumePurchase(purchaseToken, (state, json) => Log("Consume 回调 state=" + state));
+            SDK.ConsumePurchase(purchaseToken, (state, json) => Log("Consume callback state=" + state));
         }
 
         public string GetLocalizedPrice(string productId)

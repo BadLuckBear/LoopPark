@@ -78,7 +78,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u7B80\u4F53\u4E2D\u6587"
+  m_Text: "Chinese (Simplified)"
 --- !u!1 &330414251861502603
 GameObject:
   m_ObjectHideFlags: 0
@@ -366,7 +366,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u8D2D\u4E70"
+  m_Text: "Buy"
 --- !u!1 &432067711765205250
 GameObject:
   m_ObjectHideFlags: 0
@@ -4291,7 +4291,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u8D2D\u4E70"
+  m_Text: "Buy"
 --- !u!1 &5070736963553943831
 GameObject:
   m_ObjectHideFlags: 0
@@ -4638,7 +4638,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u7E41\u4F53\u4E2D\u6587"
+  m_Text: "Chinese (Traditional)"
 --- !u!1 &5284931144046148935
 GameObject:
   m_ObjectHideFlags: 0
@@ -5104,7 +5104,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u8D2D\u4E70"
+  m_Text: "Buy"
 --- !u!1 &5416761273695540396
 GameObject:
   m_ObjectHideFlags: 0
@@ -6409,7 +6409,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u8865\u6EE1\u4F53\u529B  500"
+  m_Text: "Refill Lives  500"
 --- !u!1 &6798187391086129859
 GameObject:
   m_ObjectHideFlags: 0
@@ -6673,7 +6673,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "\u5546\u5E97"
+  m_Text: "Shop"
 --- !u!114 &6291522517127092744
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -40,10 +40,10 @@ namespace LoopPark
                 step = 0;
                 guidedTaps = 0;
                 GuideNextTap();
-                ui.ShowTip("点击下方的车辆，把它开上环路", 999);
+                ui.ShowTip("Tap a car below to drive it onto the loop", 999);
                 return;
             }
-            if (d.id == 2) Once("rule_push", "停进已满的车列时，最下面的车会被挤回环路", 4.5f);
+            if (d.id == 2) Once("rule_push", "Parking into a full column pushes the bottom car back onto the loop", 4.5f);
             bool hasHidden = false, hasFence = false;
             foreach (var c in d.columns)
             {
@@ -53,8 +53,8 @@ namespace LoopPark
             foreach (var l in d.lanes) foreach (var s in l.cars) if (s.h) hasHidden = true;
             bool hasKey = false, hasCurtain = false;
             foreach (var c in d.columns) { if (c.cv > 0) hasCurtain = true; foreach (var s in c.cars) if (s.k) hasKey = true; }
-            if (hasKey && Once("key", "带钥匙的车离开车列时会掉出钥匙，钥匙能打开队首上锁的车", 4.5f)) return;
-            if (hasCurtain && Once("curtain", "帘子下的车列要消除足够数量的对应颜色车辆才会打开", 4.5f)) return;
+            if (hasKey && Once("key", "A key car leaving its column drops a key that unlocks the locked car at the front", 4.5f)) return;
+            if (hasCurtain && Once("curtain", "Columns under a curtain open after clearing enough cars of the matching color", 4.5f)) return;
             bool hasColored = false, hasGarage = false, hasIce = false, hasElevator = false, hasGen = false;
             foreach (var c in d.columns)
             {
@@ -64,17 +64,17 @@ namespace LoopPark
                 if (c.levels.Count > 0) hasElevator = true;
             }
             foreach (var l in d.lanes) if (l.gn > 0) hasGen = true;
-            if (hasGarage && Once("garage", "车库：消除一列与车库标记同色的车，车库就会打开", 4.5f)) return;
-            if (hasColored && Once("colored", "彩色车道只停对应颜色的车，这种颜色的车也不会停进普通空车位", 4.5f)) return;
-            if (hasIce && Once("ice", "冰冻车位：每消除一列，冰层减 1，冰层归零才能停车", 4.5f)) return;
-            if (hasElevator && Once("elevator", "电梯车位：清空后下面一层的车会升上来", 4.5f)) return;
-            if (hasGen && Once("generator", "车道里的车库每发出一辆车，就会再开出一辆", 4.5f)) return;
+            if (hasGarage && Once("garage", "Garage: clear a column of the color matching the garage marker to open it", 4.5f)) return;
+            if (hasColored && Once("colored", "A colored lane only takes cars of its color, and cars of that color never park in normal empty spots", 4.5f)) return;
+            if (hasIce && Once("ice", "Ice spot: each cleared column removes 1 ice layer; parking needs zero ice", 4.5f)) return;
+            if (hasElevator && Once("elevator", "Elevator spot: cars on the level below rise after it is cleared", 4.5f)) return;
+            if (hasGen && Once("generator", "Every car that leaves the garage in a lane spawns another one", 4.5f)) return;
             bool hasLink = false;
             foreach (var l in d.lanes) foreach (var s in l.cars) if (s.l != 0) hasLink = true;
-            if (hasLink && Once("link", "绑在一起的两辆车必须同时排到队首，才能一起发车", 4.5f)) return;
-            if (hasFence && Once("fence", "带黄黑栅栏的车列只能消除一次，之后会关闭", 4.5f)) return;
-            if (hasHidden && Once("hidden", "问号车：移动到车列两端或排到队首时才会显示颜色", 4.5f)) return;
-            if (d.difficulty > 0 && Once("hard", "困难关卡！卡住时可以使用下方的道具", 4f)) return;
+            if (hasLink && Once("link", "Two strapped cars must both reach the front of their lanes to depart together", 4.5f)) return;
+            if (hasFence && Once("fence", "A column with a yellow-black fence can only be cleared once, then it closes", 4.5f)) return;
+            if (hasHidden && Once("hidden", "Mystery car: color is revealed only at the ends of a column or at the front of the queue", 4.5f)) return;
+            if (d.difficulty > 0 && Once("hard", "Hard level! Use the boosters below when stuck", 4f)) return;
         }
 
         bool Once(string id, string text, float sec)
@@ -104,7 +104,7 @@ namespace LoopPark
                 {
                     step = 0;
                     GuideNextTap();
-                    ui.ShowTip("再点一辆车试试", 999);
+                    ui.ShowTip("Tap one more car to try", 999);
                 }
             }
         }
@@ -122,14 +122,14 @@ namespace LoopPark
                         game.TutorialLane = -1;
                         if (guidedTaps == 1)
                         {
-                            ui.ShowTip("车辆沿环路行驶，自动停进顶部同色的车列", 999);
+                            ui.ShowTip("Cars drive along the loop and park automatically in a matching column at the top", 999);
                             step = 1;
                             handRefresh = 1.2f;
                             game.TutorialLane = 99; // 等待期间禁止点击
                         }
                         else
                         {
-                            ui.ShowTip("把一列停满同一种颜色就能消除！", 4f);
+                            ui.ShowTip("Fill a column with one color to clear it!", 4f);
                             step = 2;
                             active = false;
                         }
@@ -140,19 +140,19 @@ namespace LoopPark
             switch (id)
             {
                 case "push":
-                    Once("rule_push", "被挤出的车会回到环路，继续寻找同色车列", 3.5f);
+                    Once("rule_push", "A pushed-out car returns to the loop and keeps looking for a matching column", 3.5f);
                     break;
                 case "lockblocked":
-                    ui.ShowTip("上锁的车需要钥匙：让带钥匙的车离开车列", 2.5f);
+                    ui.ShowTip("A locked car needs a key: drive the key car out of its column", 2.5f);
                     break;
                 case "linkblocked":
-                    ui.ShowTip("绑在一起的车要等搭档也排到队首才能出发", 2.5f);
+                    ui.ShowTip("Strapped cars wait until their partner also reaches the front of its lane", 2.5f);
                     break;
                 case "loopfull":
-                    Once("loopfull", $"环路最多容纳 {game.LoopLimit} 辆车！满了又没车能停就会失败", 4f);
+                    Once("loopfull", $"The loop holds at most {game.LoopLimit} cars! If it fills and nothing can park, you lose", 4f);
                     break;
                 case "clear":
-                    if (Once("first_clear", "太棒了！消除所有车辆即可过关", 3f)) { }
+                    if (Once("first_clear", "Great! Clear all cars to win", 3f)) { }
                     break;
             }
         }

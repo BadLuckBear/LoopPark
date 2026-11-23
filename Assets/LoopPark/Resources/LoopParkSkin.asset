@@ -452,3 +452,9 @@ MonoBehaviour:
   sfxFail: {fileID: 0}
   sfxButton: {fileID: 0}
   music: {fileID: 0}
+  sfxStart: {fileID: 0}
+  sfxUnlock: {fileID: 0}
+  sfxCoin: {fileID: 0}
+  musicVolume: 0.5
+  sfxVolume: 1
+  clearSfxSpacing: 0.09

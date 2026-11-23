@@ -29,13 +29,13 @@ namespace LoopPark.EditorTools
         /// <summary>车漆材质名关键字（名字包含即上色）。</summary>
         static readonly string[] PaintKeywords = { "base" };
 
-        [MenuItem("LoopPark/配置 3D 车模型 (car.fbx → CarModel.prefab)")]
+        [MenuItem("LoopPark/Setup 3D Car Model (car.fbx → CarModel.prefab)")]
         public static void Setup()
         {
             // 绑带件要在运行时读顶点来量“竖脚轴线 / 直口中心 / 口径”，必须先开 Read/Write。
             EnsureReadable(StrapFbxPath);
             var fbx = AssetDatabase.LoadAssetAtPath<GameObject>(FbxPath);
-            if (fbx == null) { Debug.LogError("[LoopPark] 找不到 " + FbxPath); return; }
+            if (fbx == null) { Debug.LogError("[LoopPark] Not found: " + FbxPath); return; }
             var coverFbx = AssetDatabase.LoadAssetAtPath<GameObject>(CoverFbxPath);
             var burstFbx = AssetDatabase.LoadAssetAtPath<GameObject>(BurstFbxPath);
             var mr = fbx.GetComponentsInChildren<MeshRenderer>(true).FirstOrDefault(r =>
@@ -43,7 +43,7 @@ namespace LoopPark.EditorTools
             var mf = mr != null ? mr.GetComponent<MeshFilter>() : null;
             if (mf == null || mf.sharedMesh == null || mr == null)
             {
-                Debug.LogError("[LoopPark] car.fbx 没有可用的 MeshFilter/MeshRenderer，保留旧预制体");
+                Debug.LogError("[LoopPark] car.fbx has no usable MeshFilter/MeshRenderer; keeping the old prefab");
                 return;
             }
             var mesh = mf.sharedMesh;
@@ -94,7 +94,7 @@ namespace LoopPark.EditorTools
             }
             else
             {
-                Debug.LogWarning("[LoopPark] 缺少绑带附件 " + StrapFbxPath + "，绑带车只会用车辆颜色区分");
+                Debug.LogWarning("[LoopPark] Missing strap attachment " + StrapFbxPath + ", strap cars are only told apart by car color");
             }
             CarRevealCover revealCover = null;
             CoverBurst coverBurst = null;
@@ -129,7 +129,7 @@ namespace LoopPark.EditorTools
                 }
                 else
                 {
-                    Debug.LogWarning("[LoopPark] 缺少拆分车衣 " + BurstFbxPath + "，爆衣会退回整块车衣动画");
+                    Debug.LogWarning("[LoopPark] Missing split cover asset " + BurstFbxPath + ", the burst falls back to the whole-cover animation");
                 }
                 coverBurst.staticCover = staticInst;
                 revealCover.shardBurst = coverBurst;
@@ -147,7 +147,7 @@ namespace LoopPark.EditorTools
             if (shader == null || cfg == null)
             {
                 Object.DestroyImmediate(root);
-                Debug.LogError("[LoopPark] 缺少车辆 Shader 或 SkinConfig，保留旧预制体");
+                Debug.LogError("[LoopPark] Missing car shader or SkinConfig; keeping the old prefab");
                 return;
             }
             if (coverRoot != null)
@@ -186,7 +186,7 @@ namespace LoopPark.EditorTools
             skin.animator = inst.GetComponentInChildren<Animator>();
             skin.revealCover = revealCover;
             skin.strap = strap;
-            Debug.Assert(paint.Length > 0 && skin.appearance != null, "车漆材质或外观配置绑定失败");
+            Debug.Assert(paint.Length > 0 && skin.appearance != null, "Failed to bind car paint material or appearance config");
 
             PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             Object.DestroyImmediate(root);
@@ -197,7 +197,7 @@ namespace LoopPark.EditorTools
                 EditorUtility.SetDirty(cfg);
             }
             AssetDatabase.SaveAssets();
-            Debug.Log("[LoopPark] CarModel.prefab 已生成并接入 SkinConfig");
+            Debug.Log("[LoopPark] CarModel.prefab generated and wired into SkinConfig");
         }
 
         /// <summary>
@@ -210,7 +210,7 @@ namespace LoopPark.EditorTools
             if (importer == null || importer.isReadable) return;
             importer.isReadable = true;
             importer.SaveAndReimport();
-            Debug.Log("[LoopPark] 已为 " + path + " 开启 Read/Write（绑带几何测量需要读顶点）");
+            Debug.Log("[LoopPark] Enabled Read/Write for " + path + " enabled Read/Write (strap geometry needs vertex reads)");
         }
 
         /// <summary>
@@ -280,7 +280,7 @@ namespace LoopPark.EditorTools
         }
 
         /// <summary>渲染一辆绑带车 + 一辆普通车到 Logs/strap_preview.png，检查附着位置与跟随车漆。</summary>
-        [MenuItem("LoopPark/渲染绑带车预览")]
+        [MenuItem("LoopPark/Render Strap Car Preview")]
         public static void RenderStrapPreview()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
@@ -327,7 +327,7 @@ namespace LoopPark.EditorTools
         }
 
         /// <summary>渲染预览图到 Logs/car_preview.png（需要图形设备，不能加 -nographics）。</summary>
-        [MenuItem("LoopPark/渲染车模型预览")]
+        [MenuItem("LoopPark/Render Car Model Preview")]
         public static void RenderPreview()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
@@ -400,7 +400,7 @@ namespace LoopPark.EditorTools
                 queued = false;
                 if (EditorApplication.isPlayingOrWillChangePlaymode)
                 {
-                    Debug.LogWarning("[LoopPark] 请退出播放模式后运行“配置 3D 车模型”以更新预制体");
+                    Debug.LogWarning("[LoopPark] Exit Play mode, then run Setup 3D Car Model to update the prefab");
                     return;
                 }
                 CarModelSetup.Setup();

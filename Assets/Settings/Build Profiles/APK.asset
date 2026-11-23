@@ -41,7 +41,7 @@ MonoBehaviour:
     - line: '|   useOnDemandResources: 0'
     - line: '|   accelerometerFrequency: 60'
     - line: '|   companyName: LoopParkStudio'
-    - line: '|   productName: "\u73AF\u7EBF\u505C\u8F66\u573A"'
+    - line: '|   productName: ''Car Loop: Parking Game'''
     - line: '|   defaultCursor: {instanceID: 0}'
     - line: '|   cursorHotspot: {x: 0, y: 0}'
     - line: '|   m_SplashScreenBackgroundColor: {r: 0.12156863, g: 0.12156863, b:

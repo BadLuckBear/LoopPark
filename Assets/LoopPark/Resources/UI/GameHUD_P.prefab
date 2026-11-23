@@ -364,7 +364,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u56F0\u96BE"
+  m_Text: "HARD"
 --- !u!1 &2283928118542326006
 GameObject:
   m_ObjectHideFlags: 0

@@ -27,13 +27,13 @@ namespace LoopPark.EditorTools
         static readonly Color PillarColor = new Color(0.20f, 0.23f, 0.52f);
         static readonly Color RingColor = new Color(0.70f, 0.75f, 1f);
 
-        [MenuItem("LoopPark/配置 3D 集装箱 (jizhuangxiang → Container3D.prefab)")]
+        [MenuItem("LoopPark/Setup 3D Container (jizhuangxiang → Container3D.prefab)")]
         public static void Run()
         {
             var shader = Shader.Find(ShaderName);
             if (shader == null)
             {
-                Debug.LogError($"[Container3DSetup] 找不到 {ShaderName}，先让 Unity 导入 ContainerShell.shader");
+                Debug.LogError($"[Container3DSetup] {ShaderName} not found; let Unity import ContainerShell.shader first");
                 return;
             }
 
@@ -48,7 +48,7 @@ namespace LoopPark.EditorTools
             var source = AssetDatabase.LoadAssetAtPath<GameObject>(FbxPath);
             if (source == null)
             {
-                Debug.LogError("[Container3DSetup] 找不到 FBX: " + FbxPath);
+                Debug.LogError("[Container3DSetup] FBX not found: " + FbxPath);
                 return;
             }
 
@@ -125,7 +125,7 @@ namespace LoopPark.EditorTools
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log($"[Container3DSetup] 完成：{prefab.name}，顶盖 {roofCount} 个网格 / 外框 {frameCount} 个，" +
+            Debug.Log($"[Container3DSetup] Done: {prefab.name}, roof {roofCount} meshes / frame {frameCount}, " +
                       $"SkinConfig.containerPrefab = {(skin != null && skin.containerPrefab != null ? "已赋值" : "未赋值")}");
         }
 
@@ -152,7 +152,7 @@ namespace LoopPark.EditorTools
             var p = so.FindProperty(field);
             if (p == null)
             {
-                Debug.LogError($"[Container3DSetup] 字段 {field} 不存在于 {target.GetType().Name}");
+                Debug.LogError($"[Container3DSetup] Field {field} does not exist on {target.GetType().Name}");
                 return;
             }
             p.objectReferenceValue = value;

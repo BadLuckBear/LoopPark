@@ -629,7 +629,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: X2 Coinw
+  m_Text: X2 Coin
 --- !u!114 &3658859908947883302
 MonoBehaviour:
   m_ObjectHideFlags: 0

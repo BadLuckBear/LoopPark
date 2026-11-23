@@ -12,14 +12,14 @@ namespace LoopPark
     /// </summary>
     public sealed class ContainerColorIcon : MonoBehaviour
     {
-        [Header("引用")]
+        [Header("References")]
         [SerializeField] SpriteRenderer _lockSprite;
-        [Tooltip("美术正式锁图标；留空则用 SpriteFactory 程序生成的锁")]
+        [Tooltip("Final art lock icon; empty falls back to the procedural lock from SpriteFactory")]
         [SerializeField] Sprite _lockSpriteOverride;
-        [Tooltip("有颜色解锁时使用的提示物预制体（优先级低于 SkinConfig 图标，暂未配置即走染色锁）")]
+        [Tooltip("Prompt prop prefab used for colored unlocks (lower priority than SkinConfig icons; if unset, the tinted lock is used)")]
         [SerializeField] GameObject _carIconPrefab;
 
-        [Header("渲染")]
+        [Header("Rendering")]
         [SerializeField] int _sortingOrder = 42;
 
         GameObject _spawnedCarIcon;

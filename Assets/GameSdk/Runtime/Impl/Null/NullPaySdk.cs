@@ -59,7 +59,7 @@ namespace Game.Sdk
 
         public void Purchase(string productId, Action<SdkEventArgs> onImmediate)
         {
-            Debug.Log("[NullPay] Purchase " + productId + " → 模拟成功");
+            Debug.Log("[NullPay] Purchase " + productId + " -> simulated success");
 
             var ok = new SdkPurchaseEventArgs
             {
@@ -90,7 +90,7 @@ namespace Game.Sdk
             if (OnPurchaseSucceeded != null) OnPurchaseSucceeded(ok);
         }
 
-        public void Restore() => Debug.Log("[NullPay] Restore（无未消费订单）");
+        public void Restore() => Debug.Log("[NullPay] Restore (no unconsumed orders)");
 
         public void Consume(string purchaseToken)
             => Debug.Log("[NullPay] Consume " + purchaseToken);

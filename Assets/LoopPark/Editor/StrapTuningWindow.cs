@@ -30,10 +30,10 @@ namespace LoopPark
         Vector2 scroll;
         string status = "";
 
-        [MenuItem("LoopPark/绑带/实时调色 (Play 中可调 + 保存)")]
+        [MenuItem("LoopPark/Straps/Live Tuning (Editable in Play Mode + Save)")]
         public static void Open()
         {
-            var window = GetWindow<StrapTuningWindow>("绑带调色");
+            var window = GetWindow<StrapTuningWindow>("Strap Tuning");
             window.minSize = new Vector2(340f, 320f);
             window.Reload();
             window.Show();
@@ -45,7 +45,7 @@ namespace LoopPark
         {
             config = AssetDatabase.LoadAssetAtPath<StrapTuningConfig>(AssetPath);
             serialized = config != null ? new SerializedObject(config) : null;
-            status = config != null ? "" : "还没有调色资产，点下面的按钮创建。";
+            status = config != null ? "" : "No tuning asset yet; click the button below to create one.";
         }
 
         void OnGUI()
@@ -53,13 +53,13 @@ namespace LoopPark
             EditorGUILayout.Space(4);
             EditorGUILayout.HelpBox(
                 Application.isPlaying
-                    ? "Play 中：改任何一项，场景里的绑带下一帧就变。调满意后点「保存到磁盘」。"
-                    : "未在 Play：改完点「保存到磁盘」，下次运行就用这些值。",
+                    ? "In Play mode: any change updates the straps next frame. Click Save to Disk when happy."
+                    : "Not in Play mode: click Save to Disk and the next run uses these values.",
                 MessageType.Info);
 
             if (config == null)
             {
-                if (GUILayout.Button("创建调色资产 + 挂到预制体", GUILayout.Height(30)))
+                if (GUILayout.Button("Create Tuning Asset + Attach to Prefab", GUILayout.Height(30)))
                     CreateAndBind();
                 return;
             }
@@ -76,30 +76,30 @@ namespace LoopPark
             }
 
             EditorGUILayout.Space(6);
-            if (GUILayout.Button("保存到磁盘（下次启动 / 别人读取都拿到这些值）", GUILayout.Height(30)))
+            if (GUILayout.Button("Save to Disk (next launch and other readers get these values)", GUILayout.Height(30)))
                 SaveToDisk();
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("恢复跟随车漆"))
+                if (GUILayout.Button("Follow car paint again"))
                 {
                     serialized.Update();
                     serialized.FindProperty("useCarPaint").boolValue = true;
                     serialized.ApplyModifiedPropertiesWithoutUndo();
                     EditorUtility.SetDirty(config);
-                    status = "已切回跟随车漆（记得保存）";
+                    status = "Back to following car paint (remember to save)";
                 }
-                if (GUILayout.Button("挂到预制体"))
+                if (GUILayout.Button("Attach to Prefab"))
                 {
                     BindToPrefab();
                 }
             }
-            if (GUILayout.Button("打印场景里套管当前颜色（诊断）"))
+            if (GUILayout.Button("Print current sleeve colors in scene (diagnostics)"))
                 DumpSceneColors();
 
             if (!string.IsNullOrEmpty(status))
                 EditorGUILayout.HelpBox(status, MessageType.None);
-            EditorGUILayout.LabelField("资产：" + AssetPath, EditorStyles.miniLabel);
+            EditorGUILayout.LabelField("Asset: " + AssetPath, EditorStyles.miniLabel);
         }
 
         void DrawFields()
@@ -111,29 +111,29 @@ namespace LoopPark
             var smoothness = serialized.FindProperty("smoothness");
             var specular = serialized.FindProperty("specular");
 
-            EditorGUILayout.LabelField("颜色来源", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(useCarPaint, new GUIContent("跟随本车车漆色"));
+            EditorGUILayout.LabelField("Color source", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(useCarPaint, new GUIContent("Follow this car paint"));
             using (new EditorGUI.DisabledScope(useCarPaint.boolValue))
             {
-                EditorGUILayout.PropertyField(hoseColor, new GUIContent("统一软管色"));
+                EditorGUILayout.PropertyField(hoseColor, new GUIContent("Single hose color"));
             }
-            EditorGUILayout.PropertyField(affectsArt, new GUIContent("连美术吸盘/弯头一起染色"));
+            EditorGUILayout.PropertyField(affectsArt, new GUIContent("Tint art suction cups / elbows too"));
             if (!affectsArt.boolValue)
-                EditorGUILayout.LabelField("　→ 只改代码生成的套管，美术件保持车漆色", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("  -> only code-generated sleeves change; art pieces keep car paint", EditorStyles.miniLabel);
 
             EditorGUILayout.Space(4);
-            EditorGUILayout.LabelField("材质观感", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Material look", EditorStyles.boldLabel);
             using (new EditorGUI.DisabledScope(!useCarPaint.boolValue))
             {
-                EditorGUILayout.PropertyField(lift, new GUIContent("车漆色提亮量"));
+                EditorGUILayout.PropertyField(lift, new GUIContent("Paint brightness boost"));
             }
-            EditorGUILayout.PropertyField(smoothness, new GUIContent("光滑度（高光宽度）"));
-            EditorGUILayout.PropertyField(specular, new GUIContent("高光强度（偏亮就调小）"));
+            EditorGUILayout.PropertyField(smoothness, new GUIContent("Smoothness (highlight width)"));
+            EditorGUILayout.PropertyField(specular, new GUIContent("Specular intensity (lower if too bright)"));
 
             EditorGUILayout.Space(4);
             var preview = useCarPaint.boolValue
-                ? "当前：跟随车漆"
-                : "当前：统一色 " + ColorUtility.ToHtmlStringRGB(hoseColor.colorValue);
+                ? "Current: following car paint"
+                : "Current: single color " + ColorUtility.ToHtmlStringRGB(hoseColor.colorValue);
             EditorGUILayout.HelpBox(preview, MessageType.None);
         }
 
@@ -142,11 +142,11 @@ namespace LoopPark
         void DrawHoseSection()
         {
             EditorGUILayout.Space(6);
-            EditorGUILayout.LabelField("每根管子单独调色", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Per-hose color", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
                 Application.isPlaying
-                    ? "下面列出场景里当前显示的每一根管（link 编号）。改哪个颜色，那根管下一帧就变。"
-                    : "进 Play 配对后这里才会列出管子；改完记得保存。",
+                    ? "Lists every visible hose in the scene (link id). Changing a color updates that hose next frame."
+                    : "Hoses appear here after pairing in Play mode; remember to save.",
                 MessageType.None);
 
             var straps = Object.FindObjectsByType<CarStrap>(FindObjectsSortMode.None);
@@ -160,15 +160,15 @@ namespace LoopPark
             }
             keys.Sort();
 
-            if (GUILayout.Button("把当前每根的颜色写成默认值并保存（先进 Play 配对，再点这里）"))
+            if (GUILayout.Button("Write each current hose color as defaults and save (enter Play, let cars pair, then click here)"))
             {
                 EditorTools.StrapRigCheck.CaptureCurrentHoseColors();
-                status = "已把当前颜色写入资产并保存";
+                status = "Current colors written to asset and saved";
             }
 
             if (keys.Count == 0)
             {
-                EditorGUILayout.LabelField("（当前没有可见的管子）", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("(no visible hose right now)", EditorStyles.miniLabel);
                 return;
             }
 
@@ -189,29 +189,29 @@ namespace LoopPark
                     {
                         config.SetHoseColor(key, picked);
                         EditorUtility.SetDirty(config);
-                        status = "已改 " + key + " = " + ColorUtility.ToHtmlStringRGB(picked) + "（记得保存）";
+                        status = "Changed " + key + " = " + ColorUtility.ToHtmlStringRGB(picked) + "(remember to save)";
                     }
                     if (hasOverride)
                     {
-                        if (GUILayout.Button("清除", GUILayout.Width(48f)))
+                        if (GUILayout.Button("Clear", GUILayout.Width(48f)))
                         {
                             config.ClearHoseColor(key);
                             EditorUtility.SetDirty(config);
-                            status = key + " 已回到全局规则（记得保存）";
+                            status = key + " reverted to global rule (remember to save)";
                         }
                     }
                     else
                     {
-                        GUILayout.Label("跟随默认", EditorStyles.miniLabel, GUILayout.Width(48f));
+                        GUILayout.Label("Follow default", EditorStyles.miniLabel, GUILayout.Width(48f));
                     }
                 }
             }
 
-            if (GUILayout.Button("清除所有单根设置（全部回到全局规则）"))
+            if (GUILayout.Button("Clear all per-hose settings (everything back to the global rule)"))
             {
                 config.hoses.Clear();
                 EditorUtility.SetDirty(config);
-                status = "已清除所有单根颜色（记得保存）";
+                status = "All per-hose colors cleared (remember to save)";
             }
         }
 
@@ -220,8 +220,8 @@ namespace LoopPark
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            status = "已保存：" + AssetPath + "（" + System.DateTime.Now.ToString("HH:mm:ss") + "）";
-            Debug.Log("[StrapTuning] 已保存 " + AssetPath
+            status = "Saved: " + AssetPath + "（" + System.DateTime.Now.ToString("HH:mm:ss") + "）";
+            Debug.Log("[StrapTuning] Saved " + AssetPath
                       + " useCarPaint=" + config.useCarPaint
                       + " hoseColor=" + config.hoseColor
                       + " smoothness=" + config.smoothness.ToString("F2")
@@ -240,8 +240,8 @@ namespace LoopPark
             }
             serialized = new SerializedObject(config);
             BindToPrefab();
-            status = "已创建并挂到预制体：" + AssetPath;
-            Debug.Log("[StrapTuning] 创建 " + AssetPath);
+            status = "Created and attached to prefab: " + AssetPath;
+            Debug.Log("[StrapTuning] Created " + AssetPath);
         }
 
         /// <summary>把资产写进 CarModel.prefab 的 CarStrap.tuning 字段（预制体里不挂就等于没生效）。</summary>
@@ -251,13 +251,13 @@ namespace LoopPark
             try
             {
                 var strap = root.GetComponentInChildren<CarStrap>(true);
-                if (strap == null) { status = "预制体里没找到 CarStrap"; return; }
+                if (strap == null) { status = "No CarStrap found in prefab"; return; }
                 var so = new SerializedObject(strap);
                 var property = so.FindProperty("tuning");
                 property.objectReferenceValue = config;
                 so.ApplyModifiedPropertiesWithoutUndo();
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
-                status = "已把调色资产挂到 " + PrefabPath;
+                status = "Tuning asset attached to " + PrefabPath;
             }
             finally
             {
@@ -278,12 +278,12 @@ namespace LoopPark
                 if (renderer == null) continue;
                 var block = new MaterialPropertyBlock();
                 renderer.GetPropertyBlock(block, 0);
-                Debug.Log("[StrapTuning] 套管色=" + block.GetColor("_Color")
-                          + " 弯头/美术件=" + strap.name
-                          + " 资产=" + (config != null ? config.hoseColor.ToString() : "无"));
+                Debug.Log("[StrapTuning] Sleeve color=" + block.GetColor("_Color")
+                          + " elbow/art=" + strap.name
+                          + " asset=" + (config != null ? config.hoseColor.ToString() : "None"));
                 shown++;
             }
-            status = shown > 0 ? "已打印 " + shown + " 根套管颜色（看 Console）" : "场景里没有可见套管（先让车配对）";
+            status = shown > 0 ? "Printed " + shown + " sleeve colors printed (see Console)" : "No visible sleeve in scene (pair the cars first)";
         }
     }
 }

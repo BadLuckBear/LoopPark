@@ -58,6 +58,7 @@
     <Compile Include="Assets\LoopPark\Scripts\UI\PressScale.cs" />
     <Compile Include="Assets\LoopPark\Scripts\UI\Bob.cs" />
     <Compile Include="Assets\LoopPark\Scripts\UI\SettlementModalView.cs" />
+    <Compile Include="Assets\LoopPark\Scripts\Boot\LevelFlow.cs" />
     <Compile Include="Assets\LoopPark\Scripts\Game\CarView.cs" />
     <Compile Include="Assets\LoopPark\Scripts\UI\HudView.cs" />
     <Compile Include="Assets\LoopPark\Scripts\Logic\PuzzleSim.cs" />
@@ -87,6 +88,7 @@
     <Compile Include="Assets\LoopPark\Scripts\Logic\LevelRepository.cs" />
     <Compile Include="Assets\LoopPark\Scripts\Data\Palette.cs" />
     <Compile Include="Assets\GameSdk\Runtime\Impl\ShuYuan\SYMiscSdk.cs" />
+    <Compile Include="Assets\LoopPark\Scripts\UI\AppLinks.cs" />
     <Compile Include="Assets\LoopPark\Scripts\View\StrapTuningConfig.cs" />
     <Compile Include="Assets\LoopPark\Scripts\UI\UIKit.cs" />
     <Compile Include="Assets\GameSdk\Runtime\Events\SdkEventArgs.cs" />

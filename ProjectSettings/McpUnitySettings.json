@@ -1,5 +1,5 @@
 {
-    "Port": 8050,
+    "Port": 8060,
     "RequestTimeoutSeconds": 10,
     "AutoStartServer": true,
     "AllowBatchModeServer": true,

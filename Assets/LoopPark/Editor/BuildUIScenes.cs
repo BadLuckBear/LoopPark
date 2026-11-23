@@ -216,7 +216,7 @@ public static class BuildUIScenes
         Image(view.languageButton.transform, "LanguageArrow", UIArt("setting_btn_Down"), White, new Vector2(1, .5f), new Vector2(-80, 0), new Vector2(58, 48));
         var menuBg = Image(card, "LanguageMenu", UIArt("Rectangle 630"), White, Center, new Vector2(0, -485), new Vector2(520, 430));
         view.languageMenu = menuBg.gameObject;
-        var languageNames = new[] { "English", "Français", "Deutsch", "Italiano", "日本語" };
+        var languageNames = new[] { "English", "Français", "Deutsch", "Italiano", "Japanese" };
         view.languageOptions = new Button[languageNames.Length];
         for (int i = 0; i < languageNames.Length; i++)
         {
@@ -235,15 +235,15 @@ public static class BuildUIScenes
         view.livesPanel = Panel(root.transform, "LivesPanel", "More Lives?", out card);
         Image(card, "Heart", UIArt("icon_heart_2"), White, Center, new Vector2(0, 116), new Vector2(215, 185));
         view.refillMessage = Text(card, "Status", "", 42, White, Center, new Vector2(0, -66), new Vector2(710, 100));
-        view.refillButton = PanelButton(card, "Refill", $"补满体力  {Economy.RefillLivesCost}", "common_btn_green (1)", -237);
+        view.refillButton = PanelButton(card, "Refill", $"Refill Lives  {Economy.RefillLivesCost}", "common_btn_green (1)", -237);
         view.livesCloseButton = CloseButton(card);
 
-        view.shopPanel = Panel(root.transform, "ShopPanel", "商店", out card);
+        view.shopPanel = Panel(root.transform, "ShopPanel", "Shop", out card);
         view.buyButtons = new Button[3];
         view.buyLabels = new Text[3];
         for (int i = 0; i < 3; i++)
         {
-            view.buyButtons[i] = Button(card, "Buy" + i, "购买", UIArt("common_btn_green (1)"), White, Center, new Vector2(0, 160 - i * 170), new Vector2(720, 148), 35);
+            view.buyButtons[i] = Button(card, "Buy" + i, "Buy", UIArt("common_btn_green (1)"), White, Center, new Vector2(0, 160 - i * 170), new Vector2(720, 148), 35);
             view.buyLabels[i] = view.buyButtons[i].GetComponentInChildren<Text>();
         }
         view.shopCloseButton = CloseButton(card);
@@ -288,7 +288,7 @@ public static class BuildUIScenes
         Image(root.transform, "CoinIcon", UIArt("icon_coin 1"), White, TopLeft, new Vector2(84, -232), new Vector2(106, 108));
         view.coins = Text(root.transform, "Coins", "0", 48, new Color(.50f, .16f, .02f), TopLeft, new Vector2(226, -230), new Vector2(170, 70));
         view.difficultyBackground = Image(root.transform, "Difficulty", null, new Color(.85f, .26f, .28f), Top, new Vector2(0, -297), new Vector2(180, 60));
-        view.difficulty = Text(view.difficultyBackground.transform, "Text", "困难", 36, White, new Vector2(.5f, .5f), Vector2.zero, new Vector2(170, 55));
+        view.difficulty = Text(view.difficultyBackground.transform, "Text", "HARD", 36, White, new Vector2(.5f, .5f), Vector2.zero, new Vector2(170, 55));
         for (int i = 0; i < 3; i++)
             Image(root.transform, "CollectionSlot" + i, UIArt("Rectangle 629"), White, Vector2.zero, new Vector2(91 + i * 124, 759), new Vector2(127, 127));
         var footer = Image(root.transform, "Footer", UIArt("collect_top_bg"), White, Bottom, new Vector2(0, 150), new Vector2(1125, 300));

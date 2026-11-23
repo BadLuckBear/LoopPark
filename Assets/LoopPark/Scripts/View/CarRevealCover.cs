@@ -17,25 +17,25 @@ namespace LoopPark
     /// </summary>
     public sealed class CarRevealCover : MonoBehaviour
     {
-        [Header("爆衣动画")]
-        [Tooltip("动画时长，单位为秒。")]
+        [Header("Cover burst animation")]
+        [Tooltip("Animation duration in seconds.")]
         [SerializeField] float duration = 0.42f;
-        [Tooltip("（无拆分衣片时）整块车衣沿车辆长度方向抛出的本地距离。")]
+        [Tooltip("(without split shards) local distance the whole cover is thrown along the car length.")]
         [SerializeField] float burstDistance = 0.28f;
-        [Tooltip("（无拆分衣片时）车衣爆开时的额外放大比例。")]
+        [Tooltip("(without split shards) extra scale of the cover when it bursts.")]
         [SerializeField] float burstScale = 1.28f;
-        [Tooltip("（无拆分衣片时）车衣爆开时绕模型深度轴旋转的角度。")]
+        [Tooltip("(without split shards) rotation around the model depth axis when the cover bursts.")]
         [SerializeField] float spinDegrees = 24f;
-        [Tooltip("拆分衣片的爆衣动画组件；留空时从本节点自动获取。")]
+        [Tooltip("Burst animation component for the split shards; when empty, taken from this node.")]
         public CoverBurst shardBurst;
-        [Header("上方停车区姿态")]
+        [Header("Top parking area pose")]
         // 停车区与发车区共用同一车衣中心，避免上方停车列的车衣整体偏高。
         // Cover 挂在 Body 下，停车区姿态必须使用 Body 的局部原点，不能沿用旧的根节点偏移。
         [SerializeField] Vector3 upperPosition = new Vector3(-0.006f, 0f, 0f);
         [SerializeField] Vector3 upperRotation = new Vector3(-14.1f, 0.37f, -2.221f);
         [SerializeField] Vector3 upperScale = new Vector3(1f, 0.9f, 1f);
-        [Header("模型自适应")]
-        [Tooltip("按车身实际渲染边界校正车衣的平面位置，适配不同模型旋转和缩放。")]
+        [Header("Model auto-fit")]
+        [Tooltip("Corrects the cover's planar position from the car's actual render bounds, adapting to different model rotation and scale.")]
         [SerializeField] bool autoAlignToBody = true;
 
         Vector3 basePosition;

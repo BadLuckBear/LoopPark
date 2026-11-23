@@ -10,12 +10,12 @@ namespace LoopPark.EditorTools
         SkinConfig config;
         SerializedObject settings;
         Vector2 scroll;
-        [SerializeField, Tooltip("当前正在独立调节的车色编号；最后一项为问号车。切换不会修改其他颜色。") ]
+        [SerializeField, Tooltip("Color id currently being tuned; the last entry is the mystery car. Switching does not modify other colors.") ]
         int selectedColor;
         [SerializeField] bool showFallback;
 
-        [MenuItem("LoopPark/车辆外观调节（支持运行中）")]
-        public static void Open() => GetWindow<CarAppearanceWindow>("车辆外观");
+        [MenuItem("LoopPark/Car Appearance (Works While Playing)")]
+        public static void Open() => GetWindow<CarAppearanceWindow>("Car Appearance");
 
         /// <summary>窗口打开或脚本重载后重新获取资源，避免继续使用失效的序列化对象。</summary>
         void OnEnable()
@@ -30,49 +30,49 @@ namespace LoopPark.EditorTools
 
         void OnGUI()
         {
-            if (settings == null) { EditorGUILayout.HelpBox("未找到 LoopParkSkin 配置", MessageType.Error); return; }
-            EditorGUILayout.HelpBox("播放时调整，当前车辆立即刷新。点击保存后，重新运行和打包都会使用该配置。", MessageType.Info);
+            if (settings == null) { EditorGUILayout.HelpBox("LoopParkSkin config not found", MessageType.Error); return; }
+            EditorGUILayout.HelpBox("Tune while playing; current cars refresh immediately. After saving, reruns and builds use this config.", MessageType.Info);
             settings.Update();
             scroll = EditorGUILayout.BeginScrollView(scroll);
             EditorGUI.BeginChangeCheck();
-            Field("carModelScale", "车辆缩放 X / Y / Z");
-            Field("carViewTilt", "停车区俯视倾角");
-            Field("departureCarViewTilt", "发车区俯视倾角");
-            Field("carViewTiltTransitionTime", "区域视角过渡时长");
+            Field("carModelScale", "Car scale X / Y / Z");
+            Field("carViewTilt", "Parking area tilt");
+            Field("departureCarViewTilt", "Departure area tilt");
+            Field("carViewTiltTransitionTime", "Area view transition time");
             EditorGUILayout.Space();
             var labels = new string[Palette.Count + 1];
             for (int i = 0; i < Palette.Count; i++) labels[i] = i + "  " + Palette.Names[i];
-            labels[Palette.Count] = "问号车";
-            selectedColor = EditorGUILayout.Popup(new GUIContent("独立调节的车色", "仅修改所选颜色的参数，其他车色保持各自设置。"), Mathf.Clamp(selectedColor, 0, Palette.Count), labels);
+            labels[Palette.Count] = "Mystery car";
+            selectedColor = EditorGUILayout.Popup(new GUIContent("Color being tuned", "Only the selected color changes; other colors keep their own settings."), Mathf.Clamp(selectedColor, 0, Palette.Count), labels);
             bool hidden = selectedColor == Palette.Count;
             var profile = hidden ? settings.FindProperty("hiddenCarAppearance") : settings.FindProperty("carAppearanceByColor").GetArrayElementAtIndex(selectedColor);
-            EditorGUILayout.HelpBox("独立材质优先。点击材质球在 Inspector 调颜色、贴图、高光和发光；更改共享材质会立即影响使用它的车辆。请使用 LoopPark/Layered Car Shader 以保留遮挡排序。", MessageType.Info);
-            MaterialField(profile, "paintMaterial", "车漆 / 后视镜");
-            MaterialField(profile, "windowMaterial", "车窗");
-            MaterialField(profile, "windowFrameMaterial", "窗框 / 黑色结构");
-            MaterialField(profile, "trimMaterial", "饰条");
-            MaterialField(profile, "frontSplitterMaterial", "前铲 / 下摆");
-            MaterialField(profile, "headlightMaterial", "前灯");
-            MaterialField(profile, "lightStripMaterial", "灯条");
-            MaterialField(profile, "taillightMaterial", "尾灯");
-            MaterialField(profile, "wheelMaterial", "轮毂");
-            MaterialField(profile, "tireMaterial", "轮胎");
-            showFallback = EditorGUILayout.Foldout(showFallback, "旧调色回退（仅未指定材质的部件生效）", true);
+            EditorGUILayout.HelpBox("Independent materials take priority. Click a material to tune color, texture, specular and emission in the Inspector; changing a shared material affects every car using it. Use LoopPark/Layered Car Shader to keep occlusion sorting.", MessageType.Info);
+            MaterialField(profile, "paintMaterial", "Car paint / mirrors");
+            MaterialField(profile, "windowMaterial", "Windows");
+            MaterialField(profile, "windowFrameMaterial", "Window frame / black structure");
+            MaterialField(profile, "trimMaterial", "Trim");
+            MaterialField(profile, "frontSplitterMaterial", "Front splitter / skirt");
+            MaterialField(profile, "headlightMaterial", "Headlights");
+            MaterialField(profile, "lightStripMaterial", "Light strip");
+            MaterialField(profile, "taillightMaterial", "Taillights");
+            MaterialField(profile, "wheelMaterial", "Wheels");
+            MaterialField(profile, "tireMaterial", "Tires");
+            showFallback = EditorGUILayout.Foldout(showFallback, "Legacy tinting fallback (only parts without a material)", true);
             if (showFallback)
             {
-            if (hidden) Field("hiddenCarColor", "问号车车身颜色");
-            else EditorGUILayout.PropertyField(settings.FindProperty("carColors").GetArrayElementAtIndex(selectedColor), new GUIContent("车身颜色", "所选编号的车漆颜色，修改后立即刷新。"));
-            ProfileField(profile, "carSmoothness", "光滑度（低 = 哑光）");
-            ProfileField(profile, "carSpecular", "高光强度（低 = 柔和）");
-            ProfileField(profile, "carWindowColor", "车窗");
-            ProfileField(profile, "carWindowFrameColor", "车窗框 / 黑色结构");
-            ProfileField(profile, "carTrimColor", "车身饰条");
-            ProfileField(profile, "carFrontSplitterColor", "前铲内部 / 下摆");
-            ProfileField(profile, "carHeadlightColor", "前灯");
-            ProfileField(profile, "carLightStripColor", "灯条");
-            ProfileField(profile, "carTaillightColor", "尾灯");
-            ProfileField(profile, "carWheelColor", "轮毂");
-            ProfileField(profile, "carTireColor", "轮胎");
+            if (hidden) Field("hiddenCarColor", "Mystery car body color");
+            else EditorGUILayout.PropertyField(settings.FindProperty("carColors").GetArrayElementAtIndex(selectedColor), new GUIContent("Body color", "Paint color for the selected id; changes apply immediately."));
+            ProfileField(profile, "carSmoothness", "Smoothness (low = matte)");
+            ProfileField(profile, "carSpecular", "Specular intensity (low = soft)");
+            ProfileField(profile, "carWindowColor", "Windows");
+            ProfileField(profile, "carWindowFrameColor", "Window frame / black structure");
+            ProfileField(profile, "carTrimColor", "Body trim");
+            ProfileField(profile, "carFrontSplitterColor", "Front splitter inner / skirt");
+            ProfileField(profile, "carHeadlightColor", "Headlights");
+            ProfileField(profile, "carLightStripColor", "Light strip");
+            ProfileField(profile, "carTaillightColor", "Taillights");
+            ProfileField(profile, "carWheelColor", "Wheels");
+            ProfileField(profile, "carTireColor", "Tires");
             }
             if (EditorGUI.EndChangeCheck())
             {
@@ -81,7 +81,7 @@ namespace LoopPark.EditorTools
                 config.RefreshCarAppearance();
             }
             EditorGUILayout.EndScrollView();
-            if (GUILayout.Button("保存当前外观配置"))
+            if (GUILayout.Button("Save Current Appearance Config"))
             {
                 EditorUtility.SetDirty(config);
                 AssetDatabase.SaveAssetIfDirty(config);
@@ -94,13 +94,13 @@ namespace LoopPark.EditorTools
         {
             var property = profile.FindPropertyRelative(name);
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(property, new GUIContent(label + "材质"));
+            EditorGUILayout.PropertyField(property, new GUIContent(label + "Material"));
             var material = property.objectReferenceValue as Material;
             using (new EditorGUI.DisabledScope(material == null))
-                if (GUILayout.Button("编辑", GUILayout.Width(42))) Selection.activeObject = material;
+                if (GUILayout.Button("Edit", GUILayout.Width(42))) Selection.activeObject = material;
             EditorGUILayout.EndHorizontal();
             if (material != null && material.shader.name != CarMaterialColors.ShaderName)
-                EditorGUILayout.HelpBox(label + "材质的 Shader 不兼容，运行时会使用旧配置。请选择 LoopPark/Layered Car。", MessageType.Error);
+                EditorGUILayout.HelpBox(label + "Material shader is incompatible; the legacy config is used at runtime. Choose LoopPark/Layered Car.", MessageType.Error);
         }
 
         static Material[] GetProfileMaterials(CarColorAppearance p) => new[]
@@ -124,7 +124,7 @@ namespace LoopPark.EditorTools
         }
 
         /// <summary>首次升级创建独立材质；再次执行只补空引用，保留美术已调好的资源。</summary>
-        [MenuItem("LoopPark/生成或补齐车辆独立材质")]
+        [MenuItem("LoopPark/Create or Fill Car Materials")]
         public static void EnsureMaterials()
         {
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)
@@ -161,7 +161,7 @@ namespace LoopPark.EditorTools
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssetIfDirty(config);
             config.RefreshCarAppearance();
-            Debug.Log("[CarAppearance] 已补齐 15 色及问号车的独立材质，可在车辆外观窗口选择材质球调节。");
+            Debug.Log("[CarAppearance] Materials for 15 colors and the mystery car are complete; pick the material in the Car Appearance window to tune.");
         }
 
         static bool EnsureMaterial(ref Material reference, string folder, string prefix, string part,
@@ -194,22 +194,22 @@ namespace LoopPark.EditorTools
             EditorGUILayout.PropertyField(property, new GUIContent(label, property.tooltip));
         }
 
-        [MenuItem("LoopPark/迁移独立车色外观配置")]
+        [MenuItem("LoopPark/Migrate Per-Color Appearance Config")]
         public static void MigrateAppearance()
         {
             var config = AssetDatabase.LoadAssetAtPath<SkinConfig>(ConfigPath);
             config.EnsureCarAppearances();
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssetIfDirty(config);
-            Debug.Log("[CarAppearance] 已保存 15 组独立外观及问号车配置，沿用当前参数");
+            Debug.Log("[CarAppearance] Saved 15 independent appearance sets plus mystery car config, keeping current values");
         }
 
         /// <summary>首次迁移时显式应用本次默认值；平时重建模型不覆盖设计师已调好的配置。</summary>
-        [MenuItem("LoopPark/应用本次 15 色与柔和材质配置")]
+        [MenuItem("LoopPark/Apply Current 15 Colors and Soft Materials")]
         public static void InitializeAppearance()
         {
             var config = AssetDatabase.LoadAssetAtPath<SkinConfig>(ConfigPath);
-            Undo.RecordObject(config, "应用车辆外观");
+            Undo.RecordObject(config, "Apply car appearance");
             config.carColors = (Color[])Palette.Default.Clone();
             config.carModelScale = new Vector3(1.4f, 1.2f, 1f);
             config.EnsureCarAppearances();
@@ -219,7 +219,7 @@ namespace LoopPark.EditorTools
                 profile.carSmoothness = 0.18f;
                 profile.carSpecular = 0.08f;
                 if (profile.paintMaterial == null) continue;
-                Undo.RecordObject(profile.paintMaterial, "应用车漆外观");
+                Undo.RecordObject(profile.paintMaterial, "Apply car paint appearance");
                 profile.paintMaterial.color = Palette.Get(i);
                 profile.paintMaterial.SetFloat("_Glossiness", profile.carSmoothness);
                 profile.paintMaterial.SetColor("_SpecColor", Color.white * profile.carSpecular);
@@ -229,7 +229,7 @@ namespace LoopPark.EditorTools
             config.RefreshCarAppearance();
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssetIfDirty(config);
-            Debug.Log("[CarAppearance] 已应用 15 色、柔和材质与 X1.4/Y1.2 缩放");
+            Debug.Log("[CarAppearance] Applied 15 colors, soft materials and X1.4/Y1.2 scale");
         }
     }
 }

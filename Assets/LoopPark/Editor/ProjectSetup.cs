@@ -19,7 +19,7 @@ namespace LoopPark.EditorTools
         const string SkinPath = "Assets/LoopPark/Resources/LoopParkSkin.asset";
         public const int LevelCount = 60;
 
-        // [MenuItem("LoopPark/1. 配置工程（场景、构建设置、皮肤）")]
+        // [MenuItem("LoopPark/1. Setup Project (Scenes, Build Settings, Skin)")]
         // public static void Setup()
         // {
         //     Directory.CreateDirectory("Assets/LoopPark/Scenes");
@@ -62,7 +62,7 @@ namespace LoopPark.EditorTools
         //     Debug.Log("[LoopPark] Setup done");
         // }
 
-        // [MenuItem("LoopPark/2. 生成关卡（60 关，覆盖）")]
+        // [MenuItem("LoopPark/2. Generate Levels (60 levels, overwrite)")]
         // public static void GenerateLevels() => GenerateRange(1, LevelCount);
 
         public const string CurvePath = "Assets/LoopPark/Editor/Data/difficulty_curve.csv";
@@ -70,7 +70,7 @@ namespace LoopPark.EditorTools
         public static void GenerateRange(int from, int to)
         {
             if (from < 1 || to > LevelCount || from > to)
-                throw new System.ArgumentOutOfRangeException(nameof(to), $"关卡生成范围必须在 1~{LevelCount} 之间");
+                throw new System.ArgumentOutOfRangeException(nameof(to), $"Level generation range must be within 1~{LevelCount}");
             if (File.Exists(CurvePath)) LevelGenerator.LoadCurve(File.ReadAllText(CurvePath));
             Directory.CreateDirectory(LevelDir);
             var csv = new StringBuilder("level,difficulty,columns,capacity,lanes,cars,fences,hidden,winRate,seed\n");
@@ -88,7 +88,7 @@ namespace LoopPark.EditorTools
                 }));
             while (!task.IsCompleted)
             {
-                EditorUtility.DisplayProgressBar("生成关卡", $"{done}/{total}", done / (float)total);
+                EditorUtility.DisplayProgressBar("Generate Levels", $"{done}/{total}", done / (float)total);
                 System.Threading.Thread.Sleep(200);
             }
             if (task.Exception != null) Debug.LogException(task.Exception);
@@ -96,7 +96,7 @@ namespace LoopPark.EditorTools
             {
                 int n = from + i;
                 var d = results[i];
-                if (d == null) { Debug.LogError($"[LoopPark] Level {n}: 生成失败"); csv.Append($"{n},FAILED\n"); continue; }
+                if (d == null) { Debug.LogError($"[LoopPark] Level {n}: generation failed"); csv.Append($"{n},FAILED\n"); continue; }
                 Debug.Log($"[LoopPark] level {n} rate {d.winRate:0.00} {times[i]:0.0}s");
                 var err = d.Validate();
                 if (err != null) Debug.LogError($"Level {n}: {err}");
@@ -113,7 +113,7 @@ namespace LoopPark.EditorTools
             Debug.Log($"[LoopPark] Generated levels {from}-{to}");
         }
 
-        [MenuItem("LoopPark/3. 构建 Windows 测试包")]
+        [MenuItem("LoopPark/3. Build Windows Test Build")]
         public static void BuildWindows()
         {
             var opts = new BuildPlayerOptions
@@ -127,7 +127,7 @@ namespace LoopPark.EditorTools
             Debug.Log("[LoopPark] Windows build: " + report.summary.result + " " + report.summary.totalErrors + " errors");
         }
 
-        [MenuItem("LoopPark/4. 构建 Android APK")]
+        [MenuItem("LoopPark/4. Build Android APK")]
         public static void BuildAndroid()
         {
             var scenes = AppScenePaths();

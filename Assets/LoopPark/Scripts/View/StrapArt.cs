@@ -93,7 +93,7 @@ namespace LoopPark
             var elbow = PickElbow();
             if (elbow == null)
             {
-                Debug.LogWarning("[LoopPark] Strap 子树里找不到弯头网格（名字含 " + ElbowKeyword + "），车顶绑带只会显示吸盘。");
+                Debug.LogWarning("[LoopPark] No elbow mesh in the Strap subtree (name contains " + ElbowKeyword + "), the roof strap will only show the suction cups.");
                 return;
             }
 

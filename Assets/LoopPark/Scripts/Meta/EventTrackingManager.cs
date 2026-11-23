@@ -114,7 +114,7 @@ namespace LoopPark
                 ["properties"] = JObject.FromObject(properties)
             });
             if (instance.pending.Count > MaxEvents) instance.pending.RemoveRange(0, instance.pending.Count - MaxEvents);
-            Debug.Log("[GameEventTrack] ==> 事件: [" + eventName + "] Ev结构: ["
+            Debug.Log("[GameEventTrack] ==> Event: [" + eventName + "] Ev structure: ["
                 + instance.pending[instance.pending.Count - 1].ToString(Formatting.None) + "]");
             instance.SavePending();
         }
